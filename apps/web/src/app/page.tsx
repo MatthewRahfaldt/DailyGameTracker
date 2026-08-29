@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PasteBox } from "@/components/PasteBox";
 
 export default function Home() {
@@ -14,6 +15,9 @@ export default function Home() {
         </p>
       </div>
       <PasteBox />
+      <Link href="/stats" className="text-sm underline text-black/60 dark:text-white/60">
+        View stats and activity heatmap →
+      </Link>
     </main>
   );
 }
