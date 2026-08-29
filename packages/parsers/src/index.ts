@@ -1,15 +1,32 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 import { wordleParser } from "./wordle";
+import { connectionsParser } from "./connections";
+import { catfishingParser } from "./catfishing";
+import { landmarkrParser } from "./landmarkr";
+import { geoSportsParser } from "./geosports";
+import { geoHistoryParser } from "./geohistory";
 
 export * from "./types";
 export { wordleParser };
+export { connectionsParser };
+export { catfishingParser };
+export { landmarkrParser };
+export { geoSportsParser };
+export { geoHistoryParser };
 
 /**
  * All registered parsers. Add new games here (see docs/BACKLOG.md, Milestone 2 —
  * "Implement parsers for the rest of your target games").
  */
-export const parsers: GameParser[] = [wordleParser];
+export const parsers: GameParser[] = [
+  wordleParser,
+  connectionsParser,
+  catfishingParser,
+  landmarkrParser,
+  geoSportsParser,
+  geoHistoryParser,
+];
 
 /** Find the first registered parser that recognizes this text, if any. */
 export function detectParser(text: string): GameParser | undefined {
