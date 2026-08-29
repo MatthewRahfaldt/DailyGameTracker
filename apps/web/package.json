@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@dgt/parsers": "*",
+    "@dgt/stats": "*",
     "@dgt/types": "*",
     "next": "^14.2.15",
     "react": "^18.3.1",
