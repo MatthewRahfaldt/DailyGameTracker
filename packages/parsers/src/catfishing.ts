@@ -1,7 +1,7 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 
-export interface CatfishingData {
+export interface CatfishingData extends Record<string, unknown> {
   puzzleNumber: number;
   /** Number of questions answered correctly. */
   correct: number;

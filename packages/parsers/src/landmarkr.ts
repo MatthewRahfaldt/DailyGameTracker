@@ -1,7 +1,7 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 
-export interface LandmarkrData {
+export interface LandmarkrData extends Record<string, unknown> {
   puzzleNumber: number;
   /** Each guess row, e.g. "⬛ ⬛ ⬛ ⬛ 🟨 🟩". */
   grid: string[];

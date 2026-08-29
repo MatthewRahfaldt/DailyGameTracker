@@ -1,7 +1,7 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 
-export interface WordleData {
+export interface WordleData extends Record<string, unknown> {
   puzzleNumber: number;
   hardMode: boolean;
   grid: string[];
