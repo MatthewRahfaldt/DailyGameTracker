@@ -19,7 +19,7 @@ export { geoHistoryParser };
  * All registered parsers. Add new games here (see docs/BACKLOG.md, Milestone 2 —
  * "Implement parsers for the rest of your target games").
  */
-export const parsers: GameParser[] = [
+export const parsers: GameParser<unknown>[] = [
   wordleParser,
   connectionsParser,
   catfishingParser,
@@ -29,7 +29,7 @@ export const parsers: GameParser[] = [
 ];
 
 /** Find the first registered parser that recognizes this text, if any. */
-export function detectParser(text: string): GameParser | undefined {
+export function detectParser(text: string): GameParser<unknown> | undefined {
   return parsers.find((parser) => parser.detect(text));
 }
 
@@ -37,7 +37,7 @@ export function detectParser(text: string): GameParser | undefined {
  * Parse pasted text by auto-detecting which game it belongs to.
  * Throws UnparsableTextError if no registered parser recognizes it.
  */
-export function parseGameResult(text: string): { parser: GameParser; result: ParsedResult } {
+export function parseGameResult(text: string): { parser: GameParser<unknown>; result: ParsedResult<unknown> } {
   const parser = detectParser(text);
   if (!parser) {
     throw new UnparsableTextError();
