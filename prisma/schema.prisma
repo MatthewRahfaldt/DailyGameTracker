@@ -1,0 +1,106 @@
+// Daily Game Tracker — initial schema (Milestone 1).
+// Groups/GroupGame are stubbed now so v2 (groups) doesn't need a breaking migration later,
+// per docs/BACKLOG.md Section 7.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  timezone  String   @default("America/Chicago")
+  createdAt DateTime @default(now())
+
+  userGames    UserGame[]
+  gameResults  GameResult[]
+  groupMembers GroupMember[]
+}
+
+/// One row per supported daily game (e.g. Wordle, Connections).
+/// `parserKey` matches the key registered in packages/parsers.
+model Game {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  parserKey String
+  createdAt DateTime @default(now())
+
+  userGames   UserGame[]
+  gameResults GameResult[]
+  groupGames  GroupGame[]
+}
+
+/// A game a user has assigned themselves to track.
+model UserGame {
+  userId String
+  gameId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@id([userId, gameId])
+}
+
+/// One parsed result for one user, one game, one day.
+model GameResult {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      String
+  playedDate  DateTime @db.Date
+  guesses     Int?
+  won         Boolean?
+  rawText     String
+  parsedData  Json?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  // One result per user/game/day — re-pasting the same day's result should update, not duplicate.
+  @@unique([userId, gameId, playedDate])
+}
+
+// --- v2 (groups) — stubbed now, built out in Milestone 5 ---
+
+model Group {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique @default(cuid())
+  createdAt  DateTime @default(now())
+
+  members    GroupMember[]
+  groupGames GroupGame[]
+}
+
+model GroupMember {
+  groupId  String
+  userId   String
+  role     String @default("member") // "owner" | "admin" | "member"
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  joinedAt DateTime @default(now())
+
+  @@id([groupId, userId])
+}
+
+/// A game assigned to a group — should propagate to each member's UserGame list (see backlog).
+model GroupGame {
+  groupId String
+  gameId  String
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  game  Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, gameId])
+}
