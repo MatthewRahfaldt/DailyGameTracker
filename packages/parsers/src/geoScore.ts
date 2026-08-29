@@ -5,7 +5,7 @@ import { UnparsableTextError } from "./types";
  * Shared shape for the "Geo" family of daily games (GeoSports, GeoHistory, …).
  * They share a header + score line and a row of 🟡 / 🔴 result squares.
  */
-export interface GeoScoreData extends Record<string, unknown> {
+export interface GeoScoreData {
   /** The puzzle's date label, e.g. "August 29th". */
   date: string;
   /** Points scored (the numerator). */

@@ -1,7 +1,7 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 
-export interface ConnectionsData extends Record<string, unknown> {
+export interface ConnectionsData {
   puzzleNumber: number;
   /** Each guess row, e.g. "🟩🟩🟩🟩". */
   grid: string[];
