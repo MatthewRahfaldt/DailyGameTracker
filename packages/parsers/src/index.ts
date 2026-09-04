@@ -1,22 +1,32 @@
 import type { GameParser, ParsedResult } from "./types";
 import { UnparsableTextError } from "./types";
 import { wordleParser } from "./wordle";
+import { connectionsParser } from "./connections";
+import { catfishingParser } from "./catfishing";
+import { landmarkrParser } from "./landmarkr";
+import { geoSportsParser } from "./geosports";
+import { geoHistoryParser } from "./geohistory";
 
 export * from "./types";
 export { wordleParser };
-
-// The registry deliberately holds GameParser<unknown> rather than the bare GameParser (which
-// defaults to GameParser<Record<string, unknown>>): a concrete per-game data type like
-// WordleData isn't structurally assignable to Record<string, unknown> (TS requires an explicit
-// index signature for that), so every future parser would hit the same build error wordleParser
-// just did. Widening to `unknown` sidesteps it — callers here never touch `.data` directly, only
-// each parser's own file does, with its own concrete type.
+export { connectionsParser };
+export { catfishingParser };
+export { landmarkrParser };
+export { geoSportsParser };
+export { geoHistoryParser };
 
 /**
  * All registered parsers. Add new games here (see docs/BACKLOG.md, Milestone 2 —
  * "Implement parsers for the rest of your target games").
  */
-export const parsers: GameParser<unknown>[] = [wordleParser];
+export const parsers: GameParser<unknown>[] = [
+  wordleParser,
+  connectionsParser,
+  catfishingParser,
+  landmarkrParser,
+  geoSportsParser,
+  geoHistoryParser,
+];
 
 /** Find the first registered parser that recognizes this text, if any. */
 export function detectParser(text: string): GameParser<unknown> | undefined {
@@ -27,9 +37,7 @@ export function detectParser(text: string): GameParser<unknown> | undefined {
  * Parse pasted text by auto-detecting which game it belongs to.
  * Throws UnparsableTextError if no registered parser recognizes it.
  */
-export function parseGameResult(
-  text: string
-): { parser: GameParser<unknown>; result: ParsedResult<unknown> } {
+export function parseGameResult(text: string): { parser: GameParser<unknown>; result: ParsedResult<unknown> } {
   const parser = detectParser(text);
   if (!parser) {
     throw new UnparsableTextError();
