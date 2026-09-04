@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -8,11 +9,15 @@ import { prisma } from "@/lib/prisma";
  * just keep our own `User` table (prisma/schema.prisma) in sync by email. Simpler schema, same
  * end result: `session.user.id` is our own User.id everywhere else in the app.
  *
- * Reads AUTH_GITHUB_ID / AUTH_GITHUB_SECRET / AUTH_SECRET from the environment automatically —
- * see .env.example and docs/BACKLOG.md's "Register GitHub OAuth App" step.
+ * Reads AUTH_GITHUB_ID / AUTH_GITHUB_SECRET and AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET (plus
+ * AUTH_SECRET) from the environment automatically — see .env.example and docs/BACKLOG.md's
+ * "Register GitHub OAuth App" / "Add Google OAuth as a second sign-in option" steps.
+ *
+ * Both providers land on the same User row when the email matches (see the `signIn` callback
+ * below), so someone who signs in with GitHub once and Google another time is still one account.
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub],
+  providers: [GitHub, Google],
   session: { strategy: "jwt" },
   callbacks: {
     async signIn({ user }) {
