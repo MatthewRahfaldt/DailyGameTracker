@@ -100,12 +100,14 @@ daily-game-tracker/
   - [ ] README links to or mentions the license
   - [ ] All 3 contributors agree on the choice before other code is merged (harder to change cleanly later)
 
-**Issue: Set up linting, formatting, and pre-commit checks**
+**Issue: Set up linting, formatting, and pre-commit checks** ✅ mostly done
 - Labels: `area:setup`
 - Description: ESLint + Prettier configured; optional pre-commit hook (husky) so formatting stays consistent across 3 people.
 - Acceptance criteria:
-  - [ ] `npm run lint` works
-  - [ ] Formatting is automatic or enforced on commit
+  - [x] `npm run lint` works
+  - [ ] Formatting is automatic or enforced on commit (Prettier not set up yet)
+- Note: after upgrading to Next.js 16, `next lint` was removed (Next 16 breaking change) and `eslint-config-next@16.x`'s shareable config crashes with a "circular structure" error when bridged through `@eslint/eslintrc`'s `FlatCompat` (reproduced even from a clean `node_modules` reinstall — this is the package itself, not a local environment issue). Current `apps/web/eslint.config.mjs` works around it with a minimal flat config (plain JS/TS + React Hooks recommended rules, no `eslint-config-next` at all) — meaning Next-specific lint rules (e.g. flagging `<img>` instead of `next/image`) aren't enforced right now. Worth revisiting `eslint-config-next` once a version ships that works natively with flat config.
+- Follow-up: set up Prettier + a pre-commit hook (husky/lint-staged) — not done yet.
 
 **Issue: Set up CI (build + lint + test on PR)**
 - Labels: `area:setup`
@@ -145,14 +147,25 @@ daily-game-tracker/
 - Acceptance criteria:
   - [x] User can sign up, log in, log out
   - [x] Signed-in user has a session usable in both pages and API routes
-- Note: implemented with Auth.js v5, GitHub as the first provider, JWT sessions synced to our own `User` table via callbacks (no Prisma adapter/extra tables needed).
+- Note: implemented with Auth.js v5, GitHub as the first provider. Originally JWT-only sessions with a manual upsert callback; superseded by the Prisma-adapter/database-sessions setup added for email sign-in below, which GitHub and Google now also use.
 
-**Issue: Add Google OAuth as a second sign-in option**
+**Issue: Add Google OAuth as a second sign-in option** ✅ done
 - Labels: `area:backend`, `milestone:v1`
 - Description: Add Google as a second provider alongside GitHub (`src/auth.ts`) so people without a GitHub account can still sign in. Auth.js v5 reads `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` automatically, same convention as the GitHub provider — no other config changes needed. Requires creating an OAuth client in Google Cloud Console (APIs & Services → Credentials → Create OAuth client ID → Web application), with authorized redirect URI `http://localhost:3000/api/auth/callback/google` for local dev (plus your deployed URL's equivalent once hosted).
 - Acceptance criteria:
-  - [ ] "Sign in with Google" button works end-to-end, landing on the same session/user record as GitHub sign-in would for the same email
-  - [ ] `.env.example` documents `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+  - [x] "Sign in with Google" button works end-to-end, landing on the same session/user record as GitHub sign-in would for the same email
+  - [x] `.env.example` documents `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+
+**Issue: Email magic-link sign-in**
+- Labels: `area:backend`, `milestone:v1`
+- Description: Let a user log in or create an account with just their email — no password. Implemented via Auth.js's `Resend` provider (email provider, sends a one-time sign-in link) rather than a traditional email+password flow, since that avoids ever storing/hashing passwords or building a "forgot password" flow. This required switching the whole auth setup from JWT-only sessions to the Prisma adapter (database-backed sessions), because the magic-link provider needs somewhere durable to store one-time verification tokens — see the new `Account`/`Session`/`VerificationToken` models in `prisma/schema.prisma`. GitHub and Google sign-in now ride on the same database-backed sessions as a result.
+- Setup needed: create a free account at resend.com, generate an API key, set `AUTH_RESEND_KEY` in `.env`/`.env.local`. `AUTH_EMAIL_FROM` defaults to Resend's testing sender (`onboarding@resend.dev`), which works without verifying a domain — **but on the free tier that testing sender can only deliver to the email address your Resend account was created with**. Each teammate will need their own Resend account (or the team verifies one shared sending domain) before magic-link sign-in works for all three of you.
+- Acceptance criteria:
+  - [x] Entering an email and submitting sends a real sign-in link (verify with a Resend account you can receive mail at)
+  - [x] Clicking the link signs the user in and creates a `User` row if one didn't already exist for that email
+  - [x] `npm run db:migrate` run with the updated schema (adds `Account`/`Session`/`VerificationToken` tables and `emailVerified`/`image` on `User`)
+  - [x] `.env.example` documents `AUTH_RESEND_KEY` / `AUTH_EMAIL_FROM`
+- ⚠️ **Heads up for whoever pulls this next:** if you signed in with GitHub/Google *before* this change, your browser has a leftover JWT session cookie from the old (pre-adapter) auth setup. Now that sessions are database-backed, that stale cookie makes any sign-in attempt fail with a generic `Configuration` error (Auth.js tries to delete a session row that never existed). Fix: clear `authjs.*`/`next-auth.*` cookies for `localhost:3000` (DevTools → Application → Cookies) or just test in an incognito window, then try again.
 
 **Issue: Build basic user profile**
 - Labels: `area:frontend`, `milestone:v1`

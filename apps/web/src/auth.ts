@@ -1,48 +1,44 @@
 import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google";
+import Resend from "next-auth/providers/resend";
+import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 /**
- * Auth.js v5 config. We deliberately don't use the Prisma *adapter* (which would need
- * Account/Session/VerificationToken tables) — sessions are plain JWTs, and the callbacks below
- * just keep our own `User` table (prisma/schema.prisma) in sync by email. Simpler schema, same
- * end result: `session.user.id` is our own User.id everywhere else in the app.
+ * Auth.js v5 config, backed by the Prisma adapter (Account/Session/VerificationToken tables —
+ * see prisma/schema.prisma) instead of the JWT-only + manual-upsert setup this started as.
  *
- * Reads AUTH_GITHUB_ID / AUTH_GITHUB_SECRET and AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET (plus
- * AUTH_SECRET) from the environment automatically — see .env.example and docs/BACKLOG.md's
- * "Register GitHub OAuth App" / "Add Google OAuth as a second sign-in option" steps.
+ * Why the switch: the email ("magic link") sign-in below needs somewhere durable to store
+ * one-time verification tokens, and only a database adapter provides that. Once we have it,
+ * GitHub/Google ride on the same database-backed sessions for free — one consistent auth model
+ * instead of juggling two. The adapter also takes over user creation/linking-by-email, so the
+ * manual upsert this file used to do in a `signIn` callback isn't needed anymore.
  *
- * Both providers land on the same User row when the email matches (see the `signIn` callback
- * below), so someone who signs in with GitHub once and Google another time is still one account.
+ * Env vars (see .env.example): AUTH_SECRET, AUTH_GITHUB_ID/SECRET, AUTH_GOOGLE_ID/SECRET,
+ * AUTH_RESEND_KEY, AUTH_EMAIL_FROM. All but AUTH_EMAIL_FROM are picked up automatically by
+ * Auth.js's naming convention; AUTH_EMAIL_FROM is read explicitly below since there's no
+ * sensible default "from" address to infer.
+ *
+ * Caveat worth knowing (see docs/BACKLOG.md): Resend's free tier can only send email sign-in
+ * links to the address your Resend account itself was created with, unless you verify a real
+ * sending domain. Fine for one person to try locally; your teammates will need their own Resend
+ * setup (or a shared verified domain) before magic-link sign-in works for them too.
  */
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [GitHub, Google],
-  session: { strategy: "jwt" },
+  adapter: PrismaAdapter(prisma),
+  session: { strategy: "database" },
+  providers: [
+    GitHub,
+    Google,
+    Resend({
+      from: process.env.AUTH_EMAIL_FROM ?? "onboarding@resend.dev",
+    }),
+  ],
   callbacks: {
-    async signIn({ user }) {
-      if (!user.email) return false;
-
-      await prisma.user.upsert({
-        where: { email: user.email },
-        update: { name: user.name ?? undefined },
-        create: { email: user.email, name: user.name ?? undefined },
-      });
-
-      return true;
-    },
-    async jwt({ token }) {
-      if (token.email) {
-        const dbUser = await prisma.user.findUnique({ where: { email: token.email } });
-        if (dbUser) {
-          token.userId = dbUser.id;
-        }
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && typeof token.userId === "string") {
-        session.user.id = token.userId;
+    async session({ session, user }) {
+      if (session.user) {
+        session.user.id = user.id;
       }
       return session;
     },

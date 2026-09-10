@@ -12,15 +12,62 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  timezone  String   @default("America/Chicago")
-  createdAt DateTime @default(now())
+  id            String    @id @default(cuid())
+  email         String    @unique
+  /// Set once a user verifies via a magic-link email sign-in (Auth.js sets this automatically).
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  timezone      String    @default("America/Chicago")
+  createdAt     DateTime  @default(now())
 
+  accounts     Account[]
+  sessions     Session[]
   userGames    UserGame[]
   gameResults  GameResult[]
   groupMembers GroupMember[]
+}
+
+// --- Auth.js Prisma adapter tables ---
+// Required once any provider needs durable storage: OAuth (Account) always did in principle, but
+// specifically the email/magic-link provider (Resend, below) needs somewhere to store one-time
+// verification tokens, which only a database adapter provides. Field names/shapes here follow
+// Auth.js's standard Prisma adapter schema — see docs/BACKLOG.md's email sign-in issue.
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 /// One row per supported daily game (e.g. Wordle, Connections).
