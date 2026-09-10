@@ -1,17 +1,11 @@
 import { DefaultSession } from "next-auth";
 
-// Module augmentation so `session.user.id` and `token.userId` type-check.
-// See src/auth.ts — these are set in the `session`/`jwt` callbacks.
+// Module augmentation so `session.user.id` type-checks. See src/auth.ts's `session` callback,
+// which sets it from the adapter's User record (database session strategy).
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
     } & DefaultSession["user"];
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    userId?: string;
   }
 }
