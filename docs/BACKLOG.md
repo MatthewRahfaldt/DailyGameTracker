@@ -100,12 +100,14 @@ daily-game-tracker/
   - [ ] README links to or mentions the license
   - [ ] All 3 contributors agree on the choice before other code is merged (harder to change cleanly later)
 
-**Issue: Set up linting, formatting, and pre-commit checks**
+**Issue: Set up linting, formatting, and pre-commit checks** ✅ mostly done
 - Labels: `area:setup`
 - Description: ESLint + Prettier configured; optional pre-commit hook (husky) so formatting stays consistent across 3 people.
 - Acceptance criteria:
-  - [ ] `npm run lint` works
-  - [ ] Formatting is automatic or enforced on commit
+  - [x] `npm run lint` works
+  - [ ] Formatting is automatic or enforced on commit (Prettier not set up yet)
+- Note: after upgrading to Next.js 16, `next lint` was removed (Next 16 breaking change) and `eslint-config-next@16.x`'s shareable config crashes with a "circular structure" error when bridged through `@eslint/eslintrc`'s `FlatCompat` (reproduced even from a clean `node_modules` reinstall — this is the package itself, not a local environment issue). Current `apps/web/eslint.config.mjs` works around it with a minimal flat config (plain JS/TS + React Hooks recommended rules, no `eslint-config-next` at all) — meaning Next-specific lint rules (e.g. flagging `<img>` instead of `next/image`) aren't enforced right now. Worth revisiting `eslint-config-next` once a version ships that works natively with flat config.
+- Follow-up: set up Prettier + a pre-commit hook (husky/lint-staged) — not done yet.
 
 **Issue: Set up CI (build + lint + test on PR)**
 - Labels: `area:setup`
@@ -139,7 +141,7 @@ daily-game-tracker/
   - [ ] Migration runs cleanly against the dev database
   - [ ] Basic seed script with a couple of sample games
 
-**Issue: Choose & set up auth provider**
+**Issue: Choose & set up auth provider** ✅ done
 - Labels: `area:backend`, `milestone:v1`
 - Description: Wire up Auth.js or Clerk (pick one from Section 2) for email/password or OAuth (e.g. Google) sign-in.
 - Acceptance criteria:
