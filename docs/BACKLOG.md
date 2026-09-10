@@ -139,7 +139,7 @@ daily-game-tracker/
   - [ ] Migration runs cleanly against the dev database
   - [ ] Basic seed script with a couple of sample games
 
-**Issue: Choose & set up auth provider**
+**Issue: Choose & set up auth provider** ✅ done
 - Labels: `area:backend`, `milestone:v1`
 - Description: Wire up Auth.js or Clerk (pick one from Section 2) for email/password or OAuth (e.g. Google) sign-in.
 - Acceptance criteria:
