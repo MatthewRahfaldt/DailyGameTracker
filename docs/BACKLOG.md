@@ -167,12 +167,13 @@ daily-game-tracker/
   - [x] `.env.example` documents `AUTH_RESEND_KEY` / `AUTH_EMAIL_FROM`
 - ⚠️ **Heads up for whoever pulls this next:** if you signed in with GitHub/Google *before* this change, your browser has a leftover JWT session cookie from the old (pre-adapter) auth setup. Now that sessions are database-backed, that stale cookie makes any sign-in attempt fail with a generic `Configuration` error (Auth.js tries to delete a session row that never existed). Fix: clear `authjs.*`/`next-auth.*` cookies for `localhost:3000` (DevTools → Application → Cookies) or just test in an incognito window, then try again.
 
-**Issue: Build basic user profile**
+**Issue: Build basic user profile** ✅ done
 - Labels: `area:frontend`, `milestone:v1`
 - Description: Minimal profile page (display name, timezone setting — needed later for "which day" a result counts toward).
 - Acceptance criteria:
-  - [ ] User can view/edit display name and timezone
-  - [ ] Timezone is stored and used for date calculations elsewhere in the app
+  - [x] User can view/edit display name and timezone
+  - [ ] Timezone is stored and used for date calculations elsewhere in the app — stored now (`/profile`, `src/app/profile/actions.ts`); actually *used* for date math is blocked on the paste-box save-to-database work (Milestone 3), which doesn't exist yet.
+- Note: `/profile` is a Server Component gated by `auth()` (redirects home if signed out), reads/writes the current `User` row directly via Prisma. Timezone dropdown is populated from `Intl.supportedValuesOf("timeZone")` — the full real IANA list, nothing hardcoded to maintain. Linked from the "Profile" button next to sign-out in `AuthStatus`.
 
 ## 8. Backlog — Milestone 2: Parsing Engine
 
