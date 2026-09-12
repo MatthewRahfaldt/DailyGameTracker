@@ -3,7 +3,8 @@ import { CalendarHeatmap } from "@/components/CalendarHeatmap";
 import { GameStatsTable, HeadlineStats } from "@/components/StatsSummary";
 import { getStatsView } from "@/lib/demo-data";
 
-// Dummy data is generated relative to "today", so don't let Next freeze it at build time.
+// Real data depends on the signed-in session and today's date, and demo data is generated
+// relative to "today" too — either way, don't let Next freeze this at build time.
 export const dynamic = "force-dynamic";
 
 export const metadata = {
@@ -32,8 +33,11 @@ export default async function StatsPage() {
             className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
           >
             <strong>Demo data.</strong> Showing generated results for {user.name} — nothing here
-            is saved or real. This page will be gated behind sign-in and load the signed-in
-            user&apos;s own results once auth and the database land (Milestone 1/3).
+            is saved or real.{" "}
+            <Link href="/" className="underline">
+              Sign in
+            </Link>{" "}
+            and paste a result to start building your own.
           </p>
         )}
       </header>

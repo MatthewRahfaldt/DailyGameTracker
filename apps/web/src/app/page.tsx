@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PasteBox } from "@/components/PasteBox";
 import { AuthStatus } from "@/components/AuthStatus";
+import { TodayDashboard } from "@/components/TodayDashboard";
 
 export default function Home() {
   return (
@@ -15,10 +16,11 @@ export default function Home() {
           <code className="rounded bg-black/5 px-1 py-0.5 dark:bg-white/10">
             docs/BACKLOG.md
           </code>{" "}
-          for what&apos;s next (saving results, the calendar heatmap, groups).
+          for what&apos;s next (groups, polish, mobile).
         </p>
       </div>
       <PasteBox />
+      <TodayDashboard />
       <Link href="/stats" className="text-sm underline text-black/60 dark:text-white/60">
         View stats and activity heatmap →
       </Link>

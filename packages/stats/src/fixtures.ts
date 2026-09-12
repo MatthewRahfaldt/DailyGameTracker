@@ -19,9 +19,27 @@ function rng(seed: number): () => number {
 }
 
 export const SAMPLE_GAMES: Game[] = [
-  { id: "game-wordle", slug: "wordle", name: "Wordle", parserKey: "wordle" },
-  { id: "game-connections", slug: "connections", name: "Connections", parserKey: "connections" },
-  { id: "game-nerdle", slug: "nerdle", name: "Nerdle", parserKey: "nerdle" },
+  {
+    id: "game-wordle",
+    slug: "wordle",
+    name: "Wordle",
+    parserKey: "wordle",
+    url: "https://www.nytimes.com/games/wordle/index.html",
+  },
+  {
+    id: "game-connections",
+    slug: "connections",
+    name: "Connections",
+    parserKey: "connections",
+    url: "https://www.nytimes.com/games/connections",
+  },
+  {
+    id: "game-nerdle",
+    slug: "nerdle",
+    name: "Nerdle",
+    parserKey: "nerdle",
+    url: "https://nerdlegame.com",
+  },
 ];
 
 export interface FixtureOptions {
