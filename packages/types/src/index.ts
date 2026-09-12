@@ -13,6 +13,8 @@ export interface Game {
   slug: string;
   name: string;
   parserKey: string;
+  /** Link to the game's own website, for making its name clickable in the UI. */
+  url?: string | null;
 }
 
 export interface UserGame {
