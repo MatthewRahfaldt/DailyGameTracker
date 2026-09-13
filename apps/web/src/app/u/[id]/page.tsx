@@ -4,16 +4,16 @@ import {
   buildHeatmap,
   canViewProfile,
   computeAllStats,
-  makeFixture,
-  seedFrom,
   summarizeHeatmap,
   todayUtc,
   trailingYear,
 } from "@dgt/stats";
+import type { Game } from "@dgt/types";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { CalendarHeatmap } from "@/components/CalendarHeatmap";
 import { GameStatsTable, HeadlineStats } from "@/components/StatsSummary";
+import { loadUserResults } from "@/lib/feed-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +41,21 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
 
   const today = todayUtc();
   const range = trailingYear(today);
-  const { games, assignedGameIds, results } = makeFixture({ end: today, seed: seedFrom(id), userId: id });
+
+  const userGames = await prisma.userGame.findMany({
+    where: { userId: id },
+    include: { game: true },
+  });
+  const games: Game[] = userGames.map(({ game }) => ({
+    id: game.id,
+    slug: game.slug,
+    name: game.name,
+    parserKey: game.parserKey,
+    url: game.url,
+  }));
+  const assignedGameIds = games.map((game) => game.id);
+
+  const results = await loadUserResults(id, range);
   const days = buildHeatmap(results, assignedGameIds, range);
 
   return (
@@ -51,12 +65,6 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
           ← Back to feed
         </Link>
         <h1 className="text-2xl font-semibold">{person.name ?? "Player"}</h1>
-        <p
-          role="status"
-          className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
-        >
-          <strong>Demo results.</strong> Generated history — nothing in the app saves results yet.
-        </p>
       </header>
 
       <HeadlineStats summary={summarizeHeatmap(days)} />
