@@ -9,6 +9,12 @@ export function ShareFollowLink({ code }: { code: string }) {
 
   useEffect(() => setOrigin(window.location.origin), []);
 
+  useEffect(() => {
+    if (!copied) return;
+    const timeoutId = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timeoutId);
+  }, [copied]);
+
   const url = origin ? `${origin}/follow/${code}` : `/follow/${code}`;
 
   return (
@@ -23,7 +29,6 @@ export function ShareFollowLink({ code }: { code: string }) {
           onClick={async () => {
             await navigator.clipboard.writeText(url);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
           }}
           className="rounded-md border border-black/10 px-3 py-2 text-sm font-medium transition-opacity hover:opacity-80 dark:border-white/20"
         >
