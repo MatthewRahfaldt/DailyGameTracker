@@ -49,12 +49,26 @@ export default async function FollowPage({
     return shell(<p className="text-sm">That&apos;s your own follow link — share it with someone else.</p>);
   }
 
-  if (done === "already") {
-    return shell(<p className="text-sm">You already follow {target.name ?? "this person"}.</p>);
-  }
+  // `done` is a URL query param — a crafted `?done=ok` link must never be trusted to mean the
+  // Follow relationship exists. Re-derive that from the database; `done` only ever picks the
+  // wording (freshly-followed vs. already-following) for a state the DB has confirmed is real.
+  const existing = await prisma.follow.findUnique({
+    where: {
+      followerId_followingId: { followerId: session.user.id, followingId: target.id },
+    },
+    select: { followerId: true },
+  });
 
-  if (done === "ok") {
-    return shell(<p className="text-sm">You now follow <strong>{target.name ?? "this person"}</strong>.</p>);
+  if (existing) {
+    return shell(
+      done === "ok" ? (
+        <p className="text-sm">
+          You now follow <strong>{target.name ?? "this person"}</strong>.
+        </p>
+      ) : (
+        <p className="text-sm">You already follow {target.name ?? "this person"}.</p>
+      ),
+    );
   }
 
   return shell(
