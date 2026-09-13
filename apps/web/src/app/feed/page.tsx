@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { FeedList } from "@/components/FeedList";
 import { ShareFollowLink } from "@/components/ShareFollowLink";
-import { getFeedView } from "@/lib/demo-feed";
+import { getFeedView } from "@/lib/feed-view";
 import { unfollow } from "@/lib/follow-actions";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +33,7 @@ export default async function FeedPage() {
             role="status"
             className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
           >
-            <strong>Demo results.</strong> Who you follow is real, but the results below are
-            generated — nothing in the app saves a result yet.
+            <strong>Showing sample data.</strong>
           </p>
         )}
       </header>
