@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { PasteBox } from "@/components/PasteBox";
+import { AuthStatus } from "@/components/AuthStatus";
 
 export default function Home() {
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col items-center gap-8 px-6 py-16">
+      <div className="self-end">
+        <AuthStatus />
+      </div>
       <div className="text-center">
         <h1 className="text-2xl font-semibold">Daily Game Tracker</h1>
         <p className="mt-2 text-sm text-black/60 dark:text-white/60">

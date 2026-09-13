@@ -139,12 +139,20 @@ daily-game-tracker/
   - [ ] Migration runs cleanly against the dev database
   - [ ] Basic seed script with a couple of sample games
 
-**Issue: Choose & set up auth provider**
+**Issue: Choose & set up auth provider** ✅ done
 - Labels: `area:backend`, `milestone:v1`
 - Description: Wire up Auth.js or Clerk (pick one from Section 2) for email/password or OAuth (e.g. Google) sign-in.
 - Acceptance criteria:
-  - [ ] User can sign up, log in, log out
-  - [ ] Signed-in user has a session usable in both pages and API routes
+  - [x] User can sign up, log in, log out
+  - [x] Signed-in user has a session usable in both pages and API routes
+- Note: implemented with Auth.js v5, GitHub as the first provider, JWT sessions synced to our own `User` table via callbacks (no Prisma adapter/extra tables needed).
+
+**Issue: Add Google OAuth as a second sign-in option**
+- Labels: `area:backend`, `milestone:v1`
+- Description: Add Google as a second provider alongside GitHub (`src/auth.ts`) so people without a GitHub account can still sign in. Auth.js v5 reads `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` automatically, same convention as the GitHub provider — no other config changes needed. Requires creating an OAuth client in Google Cloud Console (APIs & Services → Credentials → Create OAuth client ID → Web application), with authorized redirect URI `http://localhost:3000/api/auth/callback/google` for local dev (plus your deployed URL's equivalent once hosted).
+- Acceptance criteria:
+  - [ ] "Sign in with Google" button works end-to-end, landing on the same session/user record as GitHub sign-in would for the same email
+  - [ ] `.env.example` documents `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
 
 **Issue: Build basic user profile**
 - Labels: `area:frontend`, `milestone:v1`
