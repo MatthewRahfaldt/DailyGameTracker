@@ -1,4 +1,5 @@
 import type { DateString, FeedItem } from "@dgt/stats";
+import type { GameResult } from "@dgt/types";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -57,12 +58,16 @@ export async function loadFeedResults(
 /**
  * REAL IMPLEMENTATION for the profile page — also not wired up yet.
  * Replaces the makeFixture() call in app/u/[id]/page.tsx once results are saved.
+ *
+ * Note: A caller switching this on must also load the user's Game/UserGame rows
+ * to supply `games` and `assignedGameIds`, which makeFixture() currently returns
+ * alongside the results. This function returns results only.
  */
 export async function loadUserResults(
   userId: string,
   range: { start: DateString; end: DateString },
-) {
-  return prisma.gameResult.findMany({
+): Promise<GameResult[]> {
+  const rows = await prisma.gameResult.findMany({
     where: {
       userId,
       playedDate: {
@@ -71,6 +76,16 @@ export async function loadUserResults(
       },
     },
     orderBy: { playedDate: "asc" },
-    include: { game: true },
   });
+
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    gameId: row.gameId,
+    playedDate: row.playedDate.toISOString().slice(0, 10),
+    guesses: row.guesses,
+    won: row.won,
+    rawText: row.rawText,
+    parsedData: (row.parsedData as Record<string, unknown> | null) ?? null,
+  }));
 }
