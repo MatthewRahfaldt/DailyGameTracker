@@ -70,6 +70,9 @@ export async function AuthStatus() {
 
   return (
     <div className="flex items-center gap-3 text-sm">
+      <a href="/feed" className="underline">
+        Feed
+      </a>
       <span>Signed in as {session.user.name ?? session.user.email}</span>
       <Link
         href="/profile"
