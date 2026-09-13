@@ -1,14 +1,9 @@
-import type { DateString, FeedItem } from "@dgt/stats";
+import { type DateString, type FeedItem, normalizeDate, toUtcDate } from "@dgt/stats";
 import type { GameResult } from "@dgt/types";
 import { prisma } from "@/lib/prisma";
 
 /**
- * REAL IMPLEMENTATION — intentionally not wired up yet.
- *
- * Blocked on: nothing writes GameResult (PasteBox parses but never persists).
- * To switch over: implement result saving, then change getFeedView() in demo-feed.ts to
- * call this instead of makeFixture(), and set isDemo: false. The return type is identical,
- * so no caller changes.
+ * Real feed results, loaded from `GameResult` rows for everyone `viewerId` follows.
  *
  * Notes:
  *  - `take: 200` stands in for pagination, which is deliberately out of scope.
@@ -27,7 +22,7 @@ export async function loadFeedResults(
   if (ids.length === 0) return [];
 
   const rows = await prisma.gameResult.findMany({
-    where: { userId: { in: ids }, playedDate: { gte: new Date(`${since}T00:00:00Z`) } },
+    where: { userId: { in: ids }, playedDate: { gte: toUtcDate(since) } },
     orderBy: [{ playedDate: "desc" }, { createdAt: "desc" }],
     include: {
       game: true,
@@ -48,20 +43,19 @@ export async function loadFeedResults(
       slug: row.game.slug,
       name: row.game.name,
       parserKey: row.game.parserKey,
+      url: row.game.url,
     },
-    playedDate: row.playedDate.toISOString().slice(0, 10),
+    playedDate: normalizeDate(row.playedDate),
     guesses: row.guesses,
     won: row.won,
   }));
 }
 
 /**
- * REAL IMPLEMENTATION for the profile page — also not wired up yet.
- * Replaces the makeFixture() call in app/u/[id]/page.tsx once results are saved.
+ * Real results for the profile page (app/u/[id]/page.tsx).
  *
- * Note: A caller switching this on must also load the user's Game/UserGame rows
- * to supply `games` and `assignedGameIds`, which makeFixture() currently returns
- * alongside the results. This function returns results only.
+ * Note: A caller must also load the target user's Game/UserGame rows to supply
+ * `games` and `assignedGameIds` — this function returns results only.
  */
 export async function loadUserResults(
   userId: string,
@@ -70,10 +64,7 @@ export async function loadUserResults(
   const rows = await prisma.gameResult.findMany({
     where: {
       userId,
-      playedDate: {
-        gte: new Date(`${range.start}T00:00:00Z`),
-        lte: new Date(`${range.end}T00:00:00Z`),
-      },
+      playedDate: { gte: toUtcDate(range.start), lte: toUtcDate(range.end) },
     },
     orderBy: { playedDate: "asc" },
   });
@@ -82,7 +73,7 @@ export async function loadUserResults(
     id: row.id,
     userId: row.userId,
     gameId: row.gameId,
-    playedDate: row.playedDate.toISOString().slice(0, 10),
+    playedDate: normalizeDate(row.playedDate),
     guesses: row.guesses,
     won: row.won,
     rawText: row.rawText,
