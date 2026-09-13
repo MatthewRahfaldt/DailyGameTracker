@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { type FeedItem, formatLongDate, groupByDay } from "@dgt/stats";
+import { GameLink } from "@/components/GameLink";
 
 /** Renders feed items grouped under day headings. Assumes items are already sorted. */
 export function FeedList({ items }: { items: FeedItem[] }) {
@@ -27,11 +28,16 @@ export function FeedList({ items }: { items: FeedItem[] }) {
                   <Link href={`/u/${item.actor.id}`} className="font-medium underline">
                     {item.actor.name}
                   </Link>{" "}
-                  played {item.game.name}
+                  played <GameLink name={item.game.name} url={item.game.url} />
                 </span>
-                <span className="font-mono text-black/60 dark:text-white/60">
-                  {item.won === false ? "X/6" : item.guesses ? `${item.guesses}/6` : "—"}
-                  {item.won ? " ✓" : ""}
+                <span className="text-black/60 dark:text-white/60">
+                  {item.won === true
+                    ? item.guesses != null
+                      ? `Won in ${item.guesses}`
+                      : "Won"
+                    : item.won === false
+                      ? "Lost"
+                      : "Played"}
                 </span>
               </li>
             ))}
