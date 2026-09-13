@@ -20,12 +20,16 @@ model User {
   image         String?
   timezone      String    @default("America/Chicago")
   createdAt     DateTime  @default(now())
+  followCode String @unique @default(cuid())
 
   accounts     Account[]
   sessions     Session[]
   userGames    UserGame[]
   gameResults  GameResult[]
   groupMembers GroupMember[]
+
+  following Follow[] @relation("follower")
+  followers Follow[] @relation("following")
 }
 
 // --- Auth.js Prisma adapter tables ---
@@ -114,6 +118,21 @@ model GameResult {
 
   // One result per user/game/day — re-pasting the same day's result should update, not duplicate.
   @@unique([userId, gameId, playedDate])
+}
+
+/// A one-way follow. `followerId` follows `followingId`.
+/// Composite PK makes double-following impossible; the CHECK constraint added in the
+/// migration SQL blocks self-follows (Prisma cannot express CHECK constraints).
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }
 
 // --- v2 (groups) — stubbed now, built out in Milestone 5 ---

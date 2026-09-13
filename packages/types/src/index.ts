@@ -6,6 +6,7 @@ export interface User {
   email: string;
   name?: string | null;
   timezone: string;
+  followCode: string;
 }
 
 export interface Game {
@@ -49,4 +50,9 @@ export interface GroupMember {
 export interface GroupGame {
   groupId: string;
   gameId: string;
+}
+
+export interface Follow {
+  followerId: string;
+  followingId: string;
 }
