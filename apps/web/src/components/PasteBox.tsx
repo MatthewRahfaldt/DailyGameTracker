@@ -1,44 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { parseGameResult, UnparsableTextError } from "@dgt/parsers";
+import { saveGameResult } from "@/lib/game-results";
 
 type ParsedState =
   | { status: "idle" }
   | { status: "error"; message: string }
-  | { status: "success"; gameName: string; guesses?: number; won?: boolean };
+  | { status: "saved"; gameName: string; guesses?: number; won?: boolean }
+  | { status: "save-error"; gameName: string; message: string };
 
 /**
- * The core "paste box" flow (docs/BACKLOG.md, Milestone 2).
+ * The paste-box flow (docs/BACKLOG.md, "Build the paste-box UI on the homepage"): paste →
+ * parsed preview → saved, in one submit.
  *
- * This is a client-side-only starting point: it parses and previews a result, but doesn't save
- * anything yet — that needs the API route + database work from Milestone 1/3. Swap the TODO below
- * for a real fetch() once `POST /api/results` exists.
+ * Parsing happens twice, deliberately: once here, client-side, purely for instant feedback
+ * (garbled text shouldn't need a round trip to find out it's garbled) — and again inside
+ * `saveGameResult`, server-side, which is the version that actually gets persisted. The server
+ * never trusts a client-supplied parsed result; see the comment on `saveGameResult` for why.
  */
 export function PasteBox() {
   const [text, setText] = useState("");
   const [state, setState] = useState<ParsedState>({ status: "idle" });
+  const [isSaving, startSaving] = useTransition();
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
 
+    let parsed: ReturnType<typeof parseGameResult>;
     try {
-      const { parser, result } = parseGameResult(text);
-      setState({
-        status: "success",
-        gameName: parser.name,
-        guesses: result.guesses,
-        won: result.won,
-      });
-      // TODO (Milestone 3): POST { gameKey: parser.key, rawText: text, ...result } to
-      // /api/results once auth + the database are wired up, instead of only previewing here.
+      parsed = parseGameResult(text);
     } catch (error) {
       const message =
         error instanceof UnparsableTextError
           ? error.message
           : "Something went wrong parsing that — check the text and try again.";
       setState({ status: "error", message });
+      return;
     }
+
+    const { parser } = parsed;
+
+    startSaving(async () => {
+      const outcome = await saveGameResult(text);
+      if (outcome.status === "error") {
+        setState({ status: "save-error", gameName: parser.name, message: outcome.message });
+      } else {
+        setState({
+          status: "saved",
+          gameName: outcome.gameName,
+          guesses: outcome.guesses,
+          won: outcome.won,
+        });
+      }
+    });
   }
 
   return (
@@ -56,9 +71,10 @@ export function PasteBox() {
       />
       <button
         type="submit"
-        className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
+        disabled={isSaving}
+        className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        Parse result
+        {isSaving ? "Saving…" : "Parse & save result"}
       </button>
 
       {state.status === "error" && (
@@ -66,11 +82,17 @@ export function PasteBox() {
           {state.message}
         </p>
       )}
-      {state.status === "success" && (
+      {state.status === "saved" && (
         <p className="text-sm text-green-700 dark:text-green-400">
           Parsed as <strong>{state.gameName}</strong>
           {state.won !== undefined && <> — {state.won ? "won" : "lost"}</>}
-          {state.guesses !== undefined && <> in {state.guesses} guesses</>}.
+          {state.guesses !== undefined && <> in {state.guesses} guesses</>}. Saved.
+        </p>
+      )}
+      {state.status === "save-error" && (
+        <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
+          Parsed as <strong>{state.gameName}</strong>, but couldn&apos;t save it:{" "}
+          {state.message}
         </p>
       )}
     </form>

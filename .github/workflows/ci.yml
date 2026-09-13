@@ -6,9 +6,43 @@ on:
   push:
     branches: [main]
 
+env:
+  # Fake but well-formed values — nothing here ever needs to be reachable. `prisma generate`
+  # only needs DATABASE_URL to exist and parse; DATABASE_URL below is real *within this job*
+  # (it points at the postgres service container defined below, used to validate migrations and
+  # the seed script actually run). Every page in apps/web that touches the database or auth
+  # (see the `auth()` / `export const dynamic` usage across its routes) opts out of build-time
+  # execution, so `next build` itself never needs any of this to be real.
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/daily_game_tracker_ci
+  AUTH_SECRET: ci-placeholder-secret-not-used-anywhere-real
+  AUTH_GITHUB_ID: ci-placeholder
+  AUTH_GITHUB_SECRET: ci-placeholder
+  AUTH_GOOGLE_ID: ci-placeholder
+  AUTH_GOOGLE_SECRET: ci-placeholder
+  AUTH_RESEND_KEY: ci-placeholder
+
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
+
+    # A throwaway Postgres for this job only — lets CI actually prove the committed
+    # prisma/migrations/ history applies cleanly to a fresh database, and that prisma/seed.ts
+    # runs without error, rather than just type-checking against the schema.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: daily_game_tracker_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,10 +54,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Apply migrations to a fresh database
+        # `migrate deploy` (not `migrate dev`) — non-interactive, only ever applies migrations
+        # already committed under prisma/migrations/. `migrate dev` is a local-only command: it
+        # can prompt and generate new migration files, which is never what CI should do.
+        run: npm run db:deploy
+
+      - name: Seed check (does prisma/seed.ts run cleanly against a fresh database?)
+        run: npm run db:seed
+
       - name: Lint
         run: npm run lint --workspaces --if-present
 
-      - name: Test parsers
+      - name: Test
         run: npm run test --workspaces --if-present
 
       - name: Build

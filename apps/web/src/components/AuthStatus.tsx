@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth, signIn, signOut } from "@/auth";
 
 /**
@@ -73,6 +74,12 @@ export async function AuthStatus() {
         Feed
       </a>
       <span>Signed in as {session.user.name ?? session.user.email}</span>
+      <Link
+        href="/profile"
+        className="rounded-md border border-black/10 px-3 py-1.5 font-medium transition-opacity hover:opacity-80 dark:border-white/20"
+      >
+        Profile
+      </Link>
       <form
         action={async () => {
           "use server";

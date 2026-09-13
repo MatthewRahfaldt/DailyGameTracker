@@ -81,6 +81,9 @@ model Game {
   slug      String   @unique
   name      String
   parserKey String
+  /// Link to the game's own website — lets the UI make a game's name clickable. Nullable so a
+  /// newly-added parser without a mapped URL yet (see GAME_URLS in prisma/seed.ts) still seeds.
+  url       String?
   createdAt DateTime @default(now())
 
   userGames   UserGame[]

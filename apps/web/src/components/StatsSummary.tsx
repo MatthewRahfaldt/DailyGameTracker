@@ -1,5 +1,6 @@
 import type { GameStats, HeatmapSummary } from "@dgt/stats";
 import type { Game } from "@dgt/types";
+import { GameLink } from "@/components/GameLink";
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -31,7 +32,7 @@ export function HeadlineStats({ summary }: { summary: HeatmapSummary }) {
 }
 
 export function GameStatsTable({ stats, games }: { stats: GameStats[]; games: Game[] }) {
-  const gameName = (gameId: string) => games.find((g) => g.id === gameId)?.name ?? gameId;
+  const findGame = (gameId: string) => games.find((g) => g.id === gameId);
 
   return (
     <div className="overflow-x-auto rounded-md border border-black/10 dark:border-white/15">
@@ -47,12 +48,16 @@ export function GameStatsTable({ stats, games }: { stats: GameStats[]; games: Ga
           </tr>
         </thead>
         <tbody>
-          {stats.map((stat) => (
+          {stats.map((stat) => {
+            const game = findGame(stat.gameId);
+            return (
             <tr
               key={stat.gameId}
               className="border-b border-black/5 last:border-0 dark:border-white/10"
             >
-              <td className="p-3 font-medium">{gameName(stat.gameId)}</td>
+              <td className="p-3 font-medium">
+                <GameLink name={game?.name ?? stat.gameId} url={game?.url} />
+              </td>
               <td className="p-3 tabular-nums">{stat.played}</td>
               <td className="p-3 tabular-nums">
                 {stat.currentStreak > 0 ? `${stat.currentStreak} 🔥` : "—"}
@@ -65,7 +70,8 @@ export function GameStatsTable({ stats, games }: { stats: GameStats[]; games: Ga
                 {stat.averageGuesses == null ? "—" : stat.averageGuesses.toFixed(2)}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

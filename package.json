@@ -11,10 +11,16 @@
     "lint": "npm run lint --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "prisma generate --schema=prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma"
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema=prisma/schema.prisma",
+    "db:seed": "prisma db seed --schema=prisma/schema.prisma"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "devDependencies": {
-    "prisma": "^5.20.0"
+    "prisma": "^5.20.0",
+    "tsx": "^4.19.0"
   },
   "dependencies": {
     "@prisma/client": "^5.20.0"

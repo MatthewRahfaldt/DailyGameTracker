@@ -8,6 +8,7 @@ import {
   toWeeks,
 } from "@dgt/stats";
 import type { Game } from "@dgt/types";
+import { GameLink } from "@/components/GameLink";
 
 const DAY_LABELS = ["", "Mon", "", "Wed", "", "Fri", ""];
 
@@ -24,7 +25,7 @@ function cellClass(day: HeatmapDay | null): string {
 export function CalendarHeatmap({ days, games }: { days: HeatmapDay[]; games: Game[] }) {
   const [selected, setSelected] = useState<HeatmapDay | null>(null);
   const weeks = toWeeks(days);
-  const gameName = (gameId: string) => games.find((g) => g.id === gameId)?.name ?? gameId;
+  const findGame = (gameId: string) => games.find((g) => g.id === gameId);
 
   return (
     <section className="flex flex-col gap-4">
@@ -108,18 +109,23 @@ export function CalendarHeatmap({ days, games }: { days: HeatmapDay[]; games: Ga
             </p>
             {selected.results.length > 0 ? (
               <ul className="mt-3 flex flex-col gap-1 text-sm">
-                {selected.results.map((result) => (
+                {selected.results.map((result) => {
+                  const game = findGame(result.gameId);
+                  return (
                   <li key={result.id} className="flex justify-between gap-4">
-                    <span>{gameName(result.gameId)}</span>
+                    <GameLink name={game?.name ?? result.gameId} url={game?.url} />
                     <span className="tabular-nums text-black/70 dark:text-white/70">
-                      {result.won === false
-                        ? "X/6"
-                        : result.guesses != null
-                          ? `${result.guesses}/6`
-                          : "played"}
+                      {result.won === true
+                        ? result.guesses != null
+                          ? `Won in ${result.guesses}`
+                          : "Won"
+                        : result.won === false
+                          ? "Lost"
+                          : "Played"}
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             ) : (
               <p className="mt-3 text-sm text-black/50 dark:text-white/50">Nothing played.</p>
