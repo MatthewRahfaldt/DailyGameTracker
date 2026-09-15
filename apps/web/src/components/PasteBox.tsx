@@ -7,7 +7,7 @@ import { saveGameResult } from "@/lib/game-results";
 type ParsedState =
   | { status: "idle" }
   | { status: "error"; message: string }
-  | { status: "saved"; gameName: string; guesses?: number; won?: boolean }
+  | { status: "saved"; gameName: string }
   | { status: "save-error"; gameName: string; message: string };
 
 /**
@@ -46,53 +46,46 @@ export function PasteBox() {
       if (outcome.status === "error") {
         setState({ status: "save-error", gameName: parser.name, message: outcome.message });
       } else {
-        setState({
-          status: "saved",
-          gameName: outcome.gameName,
-          guesses: outcome.guesses,
-          won: outcome.won,
-        });
+        setState({ status: "saved", gameName: outcome.gameName });
       }
     });
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-xl flex-col gap-3">
-      <label htmlFor="game-result" className="text-sm font-medium">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+      <label htmlFor="game-result" className="sr-only">
         Paste today&apos;s game result
       </label>
-      <textarea
-        id="game-result"
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        placeholder={"Wordle 1,234 3/6\n\n⬛🟨⬛⬛⬛\n⬛🟩🟨⬛⬛\n🟩🟩🟩🟩🟩"}
-        rows={8}
-        className="w-full rounded-md border border-black/10 bg-transparent p-3 font-mono text-sm dark:border-white/20"
-      />
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
-      >
-        {isSaving ? "Saving…" : "Parse & save result"}
-      </button>
-
+      <div className="flex items-start gap-3 border-b border-stone-800 pb-2 focus-within:border-yellow-400">
+        <textarea
+          id="game-result"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder="Paste a result"
+          rows={text.includes("\n") ? 6 : 1}
+          className="min-h-[1.75rem] flex-1 resize-none bg-transparent font-mono text-sm text-stone-200 placeholder:text-stone-600 focus:outline-none"
+        />
+        <button
+          type="submit"
+          disabled={isSaving || text.trim().length === 0}
+          className="pt-0.5 font-mono text-xs uppercase tracking-wider text-yellow-400 disabled:text-stone-700"
+        >
+          {isSaving ? "Saving…" : "Save"}
+        </button>
+      </div>
       {state.status === "error" && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm text-red-400" role="alert">
           {state.message}
         </p>
       )}
       {state.status === "saved" && (
-        <p className="text-sm text-green-700 dark:text-green-400">
-          Parsed as <strong>{state.gameName}</strong>
-          {state.won !== undefined && <> — {state.won ? "won" : "lost"}</>}
-          {state.guesses !== undefined && <> in {state.guesses} guesses</>}. Saved.
+        <p className="text-sm text-green-400" role="status">
+          Saved {state.gameName}.
         </p>
       )}
       {state.status === "save-error" && (
-        <p className="text-sm text-amber-700 dark:text-amber-400" role="alert">
-          Parsed as <strong>{state.gameName}</strong>, but couldn&apos;t save it:{" "}
-          {state.message}
+        <p className="text-sm text-red-400" role="alert">
+          {state.gameName}: {state.message}
         </p>
       )}
     </form>
