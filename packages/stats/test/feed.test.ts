@@ -16,8 +16,6 @@ function item(actorId: string, playedDate: string, gameName = "Wordle"): FeedIte
     actor: { id: actorId, name: actorId, image: null },
     game: { ...GAME, name: gameName },
     playedDate,
-    guesses: 3,
-    won: true,
     summary: {
       resultId: `${actorId}-${gameName}-${playedDate}`,
       gameId: GAME.id,

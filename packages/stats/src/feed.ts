@@ -15,16 +15,8 @@ export interface FeedItem {
   actor: FeedActor;
   game: Game;
   playedDate: DateString;
-  guesses: number | null;
-  won: boolean | null;
   /** Game-specific card data, computed on the server. */
   summary: ResultSummary;
-}
-
-/** Feed items bucketed under a single day. */
-export interface FeedDay {
-  date: DateString;
-  items: FeedItem[];
 }
 
 /**
@@ -44,8 +36,8 @@ export function seedFrom(userId: string): number {
  * Sort newest first and drop anything before `since` (inclusive).
  * Same-day ties break by actor id then game name so the order is stable across renders.
  */
-export function mergeFeed(items: FeedItem[], since: DateString): FeedItem[] {
-  return items
+export function mergeFeed<T extends FeedItem>(items: readonly T[], since: DateString): T[] {
+  return [...items]
     .filter((i) => i.playedDate >= since)
     .sort((a, b) => {
       if (a.playedDate !== b.playedDate) return a.playedDate < b.playedDate ? 1 : -1;
