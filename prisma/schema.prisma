@@ -7,8 +7,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -27,6 +28,7 @@ model User {
   userGames    UserGame[]
   gameResults  GameResult[]
   groupMembers GroupMember[]
+  reactions    Reaction[]
 
   following Follow[] @relation("follower")
   followers Follow[] @relation("following")
@@ -118,6 +120,7 @@ model GameResult {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  reactions Reaction[]
 
   // One result per user/game/day — re-pasting the same day's result should update, not duplicate.
   @@unique([userId, gameId, playedDate])
@@ -138,12 +141,16 @@ model Follow {
   @@index([followingId])
 }
 
-// --- v2 (groups) — stubbed now, built out in Milestone 5 ---
+// --- v2 (groups) ---
 
 model Group {
   id         String   @id @default(cuid())
   name       String
   inviteCode String   @unique @default(cuid())
+  /// Salted+hashed join password ("<saltHex>:<hashHex>", see apps/web/src/lib/password.ts).
+  /// Null means anyone with the invite code can join without one. Never store a plaintext
+  /// password here — only the owner can set/reset it, via resetGroupPassword.
+  passwordHash String?
   createdAt  DateTime @default(now())
 
   members    GroupMember[]
@@ -163,7 +170,9 @@ model GroupMember {
   @@id([groupId, userId])
 }
 
-/// A game assigned to a group — should propagate to each member's UserGame list (see backlog).
+/// A game assigned to a group. Assigning one propagates to every current member's UserGame list
+/// (see assignGameToGroup); removing one only un-assigns the group's copy — a member's own
+/// UserGame row, and all their past GameResult history, is left alone (see docs/BACKLOG.md).
 model GroupGame {
   groupId String
   gameId  String
@@ -172,4 +181,24 @@ model GroupGame {
   game  Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
 
   @@id([groupId, gameId])
+}
+
+/// An emoji reaction from one user to one GameResult (docs/BACKLOG.md, Milestone 5 — "Group
+/// emoji reactions"). `emoji` is restricted to REACTION_EMOJI (packages/types) by the server
+/// action, not by the database — Postgres has no enum here to keep the migration simple, so
+/// apps/web/src/app/groups/actions.ts is the one place that enforces it.
+model Reaction {
+  id           String   @id @default(cuid())
+  gameResultId String
+  userId       String
+  emoji        String
+  createdAt    DateTime @default(now())
+
+  gameResult GameResult @relation(fields: [gameResultId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // One reaction per (person, result, emoji) — you can react 👍 and 🔥 to the same result, but
+  // can't double-👍 it. Toggling the same emoji again removes it (see toggleReaction).
+  @@unique([gameResultId, userId, emoji])
+  @@index([gameResultId])
 }

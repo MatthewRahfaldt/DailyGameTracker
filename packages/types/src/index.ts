@@ -58,3 +58,23 @@ export interface Follow {
   followerId: string;
   followingId: string;
 }
+
+/**
+ * Fixed emoji palette for reacting to a group member's game result (docs/BACKLOG.md,
+ * Milestone 5 — "Group emoji reactions"). Kept as a closed set rather than free-form input so a
+ * reaction is always one glyph, rendered consistently, and never an avenue for arbitrary text.
+ */
+export const REACTION_EMOJI = ["👍", "🎉", "🔥", "😂", "😮", "💀"] as const;
+
+export type ReactionEmoji = (typeof REACTION_EMOJI)[number];
+
+export function isReactionEmoji(value: string): value is ReactionEmoji {
+  return (REACTION_EMOJI as readonly string[]).includes(value);
+}
+
+export interface Reaction {
+  id: string;
+  gameResultId: string;
+  userId: string;
+  emoji: ReactionEmoji;
+}

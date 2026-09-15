@@ -14,6 +14,10 @@ env:
   # (see the `auth()` / `export const dynamic` usage across its routes) opts out of build-time
   # execution, so `next build` itself never needs any of this to be real.
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/daily_game_tracker_ci
+  # Same value as DATABASE_URL — the schema now references both (see prisma/schema.prisma's
+  # directUrl, added for Supabase's connection pooler in production), and this one-container
+  # CI database has no pooler in the way, so there's no distinction to make here.
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/daily_game_tracker_ci
   AUTH_SECRET: ci-placeholder-secret-not-used-anywhere-real
   AUTH_GITHUB_ID: ci-placeholder
   AUTH_GITHUB_SECRET: ci-placeholder

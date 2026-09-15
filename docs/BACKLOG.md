@@ -1,6 +1,6 @@
 # Daily Game Tracker — Project Plan & GitHub Backlog
 
-_Last updated: 2026-08-29_
+_Last updated: 2026-09-13_
 
 This doc is meant to live in the repo (e.g. as `PLANNING.md` or `docs/BACKLOG.md`) and to be a copy/paste source for GitHub Issues. Each item under "Backlog" is written as one issue: title, suggested labels, description, and acceptance criteria.
 
@@ -80,15 +80,15 @@ daily-game-tracker/
 
 ## 6. Backlog — Milestone 0: Project Setup
 
-**Issue: Initialize monorepo and base Next.js + TypeScript project**
+**Issue: Initialize monorepo and base Next.js + TypeScript project** ✅ done
 - Labels: `area:setup`, `milestone:v1`
 - Description: Scaffold the repo structure from Section 3, set up Next.js + TypeScript + Tailwind, commit a working "hello world" page.
 - Acceptance criteria:
-  - [ ] Repo created, structure matches Section 3
-  - [ ] `npm run dev` runs a working blank homepage
-  - [ ] README with setup instructions
+  - [x] Repo created, structure matches Section 3
+  - [x] `npm run dev` runs a working blank homepage — long since grown well past blank, but confirmed working throughout this whole project
+  - [x] README with setup instructions
 
-**Issue: Choose and add an open-source LICENSE file**
+**Issue: Choose and add an open-source LICENSE file** ✅ mostly done
 - Labels: `area:setup`
 - Description: Repo is going public, so it needs a license before anyone else can safely use or contribute to it (no license = "all rights reserved" by default, even if the code is visible). Recommendation: **MIT** — short, permissive, the most common choice for hobby/small-team projects, and well understood by anyone who'd want to use or contribute to it. Add the `LICENSE` file at the repo root (GitHub/GitLab both offer to generate MIT boilerplate with your name + year filled in), and a one-line mention in the README.
 - Alternatives to consider instead, if any of these matter to your team:
@@ -96,9 +96,9 @@ daily-game-tracker/
   - `GPL-3.0` / `AGPL-3.0` — "copyleft": anyone who modifies your code and distributes it (AGPL: or runs it as a hosted service) must also open-source their version. Use this only if you specifically want to prevent someone from taking the project closed-source/commercial without contributing back.
 - Not legal advice — if you want certainty for a specific situation (e.g. someone else's game-output format, or a future commercial version), that's worth a real lawyer's opinion, but for a public hobby repo like this, MIT is the standard default.
 - Acceptance criteria:
-  - [ ] `LICENSE` file added at repo root with the chosen license text
-  - [ ] README links to or mentions the license
-  - [ ] All 3 contributors agree on the choice before other code is merged (harder to change cleanly later)
+  - [x] `LICENSE` file added at repo root with the chosen license text — MIT, credited to all three of you
+  - [x] README links to or mentions the license
+  - [ ] All 3 contributors agree on the choice before other code is merged — can't verify a team conversation happened from here; worth a quick "hey, MIT ok with everyone?" if that hasn't explicitly come up
 
 **Issue: Set up linting, formatting, and pre-commit checks** ✅ mostly done
 - Labels: `area:setup`
@@ -122,12 +122,27 @@ daily-game-tracker/
 - ⚠️ **I couldn't write `.github/workflows/ci.yml` myself** — the device bridge refuses writes to anything under `.github/workflows/` (workflow files can run with repo secrets, so that's a deliberate guardrail, not a bug). It's attached in the conversation instead — copy it into place at `.github/workflows/ci.yml` (replacing what's there) yourself.
 - Recommend opening a small test PR after this lands to actually watch the `verify` check run once, both to confirm it's green and so it shows up as a selectable status check when setting up the branch protection rule above. I wasn't able to run this workflow myself before handing it over (no way to execute GitHub Actions from here) — the Postgres-service-container and Prisma steps follow standard, well-documented patterns, but this is the one piece of this session's work that's genuinely unverified until it runs for real.
 
-**Issue: Provision hosting and database**
+**Issue: Provision hosting and database** ⏸️ paused
 - Labels: `area:setup`
+- Paused: work-in-progress on a separate branch, deprioritized for now in favor of the Groups feature (Milestone 5) below. Nothing here is lost — pick back up from the WIP branch whenever it's next up.
 - Description: Create Vercel project (connected to repo) and managed Postgres instance (Supabase/Neon). Store connection secrets properly (Vercel env vars, `.env.local` template in repo).
 - Acceptance criteria:
   - [ ] `main` auto-deploys to a live URL on push
   - [ ] App can connect to the database from both local dev and the deployed environment
+- The database (Supabase) has been provisioned and in use locally this whole project — what's actually missing is the Vercel side, which needs a Vercel account and clicking through their dashboard (nothing I can do from here). Prep work done so the deploy itself goes smoothly once you get there:
+  - **`prisma/schema.prisma` now has a `directUrl`, alongside `url`**, specifically for Supabase + Vercel: Vercel's serverless functions can spin up many concurrent short-lived instances, each opening its own DB connection, which exhausts Postgres's connection limit fast without pooling. `url` (`DATABASE_URL`) should be Supabase's *pooled* connection string in production (port 6543, "Transaction" mode); `directUrl` (`DIRECT_URL`) is what the Prisma CLI itself needs for schema changes (`migrate`/`db seed`), which can't go through a pooler — Supabase's *direct* connection string (port 5432). Locally these can just be the same value (no pooler in the way yet) — `.env.example` explains this inline.
+  - **`npm install` now regenerates the Prisma client automatically** (root `postinstall` script) — matters for Vercel specifically, since every deploy runs a fresh `npm install` with no pre-existing `node_modules` to reuse.
+  - **`apps/web` has a `vercel-build` script** (`prisma migrate deploy && next build`) — Vercel auto-detects and uses this in place of `build` when present, so every deploy applies any new migrations to production *before* building, automatically. Nobody needs to remember to run migrations against production by hand.
+  - **README has a Deployment section** pointing back here.
+  - Needed one more small addition to `.github/workflows/ci.yml` (a `DIRECT_URL` env var, since the schema now references it) — same file-write restriction as before, so this went out as a conversation attachment again rather than a direct write.
+- What's left, walking through Vercel's dashboard:
+  1. vercel.com → sign in with the same GitHub account/org as the repo → **Add New… → Project** → import `MatthewRahfaldt/DailyGameTracker` (grant Vercel repo access if it asks).
+  2. On the import screen, click **Edit** next to Root Directory and set it to `apps/web` — required since this is a monorepo; Vercel's Next.js detection and the `vercel-build` script above both depend on this being set correctly. Framework Preset should auto-detect "Next.js" — leave Build/Install/Output commands on their defaults.
+  3. Expand **Environment Variables** and add, for Production (and Preview if you want PR preview deploys to work too): `DATABASE_URL` (Supabase pooled string, port 6543), `DIRECT_URL` (Supabase direct string, port 5432), `AUTH_SECRET` (generate a **new** one for production — `npx auth secret` — don't reuse your local dev one), `AUTH_GITHUB_ID`/`AUTH_GITHUB_SECRET`, `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET`, `AUTH_RESEND_KEY`, `AUTH_EMAIL_FROM`.
+  4. Click **Deploy**.
+  5. Once you have the production URL, go back to the GitHub OAuth App and the Google Cloud Console OAuth client and add an authorized redirect URI for it (`https://<your-domain>/api/auth/callback/github` and `.../google`) — alongside the existing `localhost:3000` ones, not replacing them.
+  6. Push to `main` (or merge a PR) to confirm auto-deploy actually fires on its own.
+- I wasn't able to do any of steps 1–6 myself (no access to your Vercel account) or verify the `vercel-build`/`directUrl` setup against a real deploy — same caveat as the CI workflow: this follows standard, well-documented Prisma + Supabase + Vercel patterns, but it's unverified until it actually runs. Let me know what happens (or paste a failed build log) and I'll help debug.
 
 **Issue: Create GitHub Project board and issue labels**
 - Labels: `area:setup`
@@ -268,39 +283,52 @@ daily-game-tracker/
   - [x] Stats page per game shows the above
   - [x] Streak logic correctly handles the user's timezone and missed days — timezone is resolved once, at save time (`todayInTimezone`, above); everything downstream (`packages/stats/src/stats.ts`) just does day-diff math on the resulting date strings, agnostic to timezone entirely.
 - Note: same situation as the heatmap above — `packages/stats/src/stats.ts` (`computeGameStats`, streak math, win rate, average guesses) and `StatsSummary.tsx` already existed against fixture data; wiring `getStatsView` to real rows closes this out too.
-- ⚠️ **Known issue, not fixing now:** `saveGameResult` (`apps/web/src/lib/game-results.ts`) stores `GameResult.playedDate` using `todayInTimezone(user.timezone)` — the *pasting* user's own zone. But `@dgt/stats` (`packages/stats/src/dates.ts`) and the follow feed (`apps/web/src/lib/feed-queries.ts`, `feed-view.ts`) treat every date as a UTC calendar day. For a single user this never surfaces, since one person only ever has one timezone. Once the follow feed (`/feed`, `/u/[id]`) is showing real results across different people, though, two followed users in different timezones can genuinely disagree with each other about which calendar day a given result "belongs to" — the feed's day-grouping and a viewed profile's heatmap can end up bucketing the same result differently than that person's own timezone would. Fixing it properly means making `packages/stats/src/dates.ts` timezone-aware (or otherwise reconciling per-user local days with UTC bucketing), which touches every consumer of that module (heatmap, stats, feed) — deliberately deferred rather than done as a drive-by part of switching the follow feed off generated data.
 
 ---
 
 ## 11. Backlog — Milestone 5 (v2): Groups
 
-**Issue: Design group data model & invite flow**
+**Issue: Design group data model & invite flow** ✅ done
 - Labels: `area:backend`, `milestone:v2`
-- Description: `Group`, `GroupMember`, `GroupGame` tables (may already be stubbed from Milestone 1). Decide invite mechanism (shareable code/link vs. email invite).
+- Description: `Group`/`GroupMember`/`GroupGame` were already stubbed from Milestone 1 (many-to-many users↔groups and group↔games via composite-key join tables) — this issue adds what was missing: a nullable `Group.passwordHash` (invite-code-only join stays supported; a password is opt-in and owner-resettable) and a new `Reaction` model for the emoji-reactions issue below.
 - Acceptance criteria:
-  - [ ] Schema supports many-to-many users↔groups and group↔games
-  - [ ] Invite flow decided and documented
+  - [x] Schema supports many-to-many users↔groups and group↔games — unchanged from Milestone 1's stub
+  - [x] Invite flow decided and documented — shareable link/code (`Group.inviteCode`, already a unique cuid), same pattern as the personal follow-link feature (`User.followCode` → `/follow/[code]`) another dev built this session: here it's `/groups/join/[code]`. No email invites — didn't come up in the actual spec, and a link is simpler for a friend group.
+- **Requires a migration**: adds `Group.passwordHash` and the whole `Reaction` model. Run `npm run db:migrate` after pulling.
+- Password design: hashed with Node's built-in `crypto.scryptSync` (`apps/web/src/lib/password.ts`) rather than adding a dependency (bcrypt/argon2) — reasonable for a low-stakes group password, not an account credential. Stored as one `"<saltHex>:<hashHex>"` string column. Verification uses `timingSafeEqual`.
 
-**Issue: Create/join group UI**
+**Issue: Create/join group UI** ✅ done
 - Labels: `area:frontend`, `milestone:v2`
-- Description: Pages to create a group, invite others, and join via invite link/code.
+- Description: Pages to create a group, invite others, and join via invite link/code — plus, beyond the original scope, an optional join password (set at creation or later) and role management.
 - Acceptance criteria:
-  - [ ] User can create a group and get an invite link
-  - [ ] Another user can join via that link
+  - [x] User can create a group and get an invite link — `/groups` (create form; creator becomes `role: "owner"`), `ShareGroupLink` component shows the `/groups/join/[code]` link with a copy button
+  - [x] Another user can join via that link — `/groups/join/[code]`, or pasting a bare code into the "Join a group" form on `/groups`. If the group has a password (owner can set/change/clear one any time from the group page), joining checks it; wrong password or a dead code both surface a clear inline error (`JoinGroupForm.tsx`) rather than a generic failure.
+- Also built, since "admin privilege level or higher" (see the games-assignment issue below) only means something if more than one person can hold it: the owner can promote a member to admin or demote them back (can't touch the owner role itself), and any non-owner member can leave. The owner leaving isn't supported yet — no ownership-transfer flow — noted as a fast-follow rather than blocking this issue.
 
-**Issue: Assign games to a group**
+**Issue: Assign games to a group** ✅ done
 - Labels: `area:backend`, `area:frontend`, `milestone:v2`
-- Description: Group owner/admin picks games for the group; decide and implement the rule that this auto-adds those games to each member's tracked list (per the product description).
+- Description: Group owner/admin picks games for the group; auto-adds those games to each member's tracked list (per the product description) — this is the propagation the `GroupGame` schema comment has called for since Milestone 1.
 - Acceptance criteria:
-  - [ ] Assigning a game to a group updates all members' tracked games
-  - [ ] Removing a game from a group is handled sensibly (doesn't silently delete a member's own history)
+  - [x] Assigning a game to a group updates all members' tracked games — `assignGameToGroup` upserts a `UserGame` row for every *current* member the moment a game is assigned; joining a group later (`joinGroupByCode`) does the same in reverse, upserting `UserGame` for every game the group already has, so it works both directions regardless of which happens first
+  - [x] Removing a game from a group is handled sensibly (doesn't silently delete a member's own history) — `removeGameFromGroup` only deletes the `GroupGame` row; a member's own `UserGame` and all their past `GameResult`s are untouched, same "hide, don't delete" rule as personally untracking a game
+- Only `owner`/`admin` members can assign or remove a group's games (`requireRole` check in `apps/web/src/app/groups/actions.ts`); plain members can't.
 
-**Issue: Group dashboard & shared stats**
+**Issue: Group dashboard & shared stats** ✅ done
 - Labels: `area:frontend`, `milestone:v2`
-- Description: View comparing group members' stats for shared games (e.g. a simple leaderboard per game, or a combined heatmap).
+- Description: View comparing group members' stats for shared games (e.g. a simple leaderboard per game, or a combined heatmap) — a feed plus a per-game leaderboard, not a shared heatmap (a heatmap doesn't have an obvious multi-person representation; a leaderboard does).
 - Acceptance criteria:
-  - [ ] Group page lists members and their stats for group-assigned games
-  - [ ] Respects each member's own privacy/timezone settings
+  - [x] Group page lists members and their stats for group-assigned games — `/groups/[id]`: roster with roles, a feed of results (see the emoji-reactions issue below), and one standings table per assigned game (`buildStandings`, `packages/stats/src/groupStats.ts` — ranked by current streak, then win rate, then games played; reuses `computeGameStats` per member rather than inventing group-specific math)
+  - [x] Respects each member's own privacy/timezone settings — the group feed/standings are scoped to `GroupGame` (only games the group actually assigned show up, never a member's whole personal history) and gated entirely behind membership: `getGroupView` doesn't even query results for a non-member, who only ever sees the group's name, member count, and a join form
+- Note: standings are all-time (same as the personal `/stats` page), but the feed is a rolling 30-day window (same as the personal follow feed) — a leaderboard should reflect a member's whole history, a feed shouldn't scroll back forever.
+
+**Issue: Group emoji reactions** ✅ done
+- Labels: `area:frontend`, `area:backend`, `milestone:v2`
+- Description: Not in the original Milestone 5 plan — added by request alongside groups. React to a fellow group member's game result with an emoji.
+- Acceptance criteria:
+  - [x] Fixed emoji palette (👍 🎉 🔥 😂 😮 💀 — `REACTION_EMOJI` in `packages/types`) rather than free-form input, so a reaction is always one glyph and never an avenue for arbitrary text
+  - [x] One click adds your reaction, clicking the same emoji again removes it (`toggleReaction` server action)
+  - [x] Reacting is scoped to the group: only possible on a result that actually belongs to a fellow member, for a game the group has assigned — the same visibility rule the feed itself uses
+- Comments (on the group, on a game, or on another member) were requested for later, not now — "I would also like to add the option in the future" — intentionally not built. Worth its own issue whenever that's picked up; the `Reaction` model's shape (linked to a `GameResult`, not a `Group`) would need a sibling `Comment` model rather than reusing this one.
 
 ## 12. Backlog — Milestone 6: Polish & Mobile-readiness
 

@@ -73,6 +73,9 @@ export async function AuthStatus() {
       <a href="/feed" className="underline">
         Feed
       </a>
+      <Link href="/groups" className="underline">
+        Groups
+      </Link>
       <span>Signed in as {session.user.name ?? session.user.email}</span>
       <Link
         href="/profile"
