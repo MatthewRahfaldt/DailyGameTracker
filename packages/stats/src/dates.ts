@@ -117,3 +117,18 @@ export function formatLongDate(date: DateString): string {
     timeZone: "UTC",
   }).format(toUtcDate(date));
 }
+
+/** "Sep 14" — compact day label for section headings and cards. */
+export function formatShortDate(date: DateString): string {
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(
+    toUtcDate(date),
+  );
+}
+
+/** "Today", "Yesterday", or a short date — for feed day headings. */
+export function dayLabel(date: DateString, today: DateString = todayUtc()): string {
+  const diff = diffDays(date, today);
+  if (diff === 0) return "Today";
+  if (diff === 1) return "Yesterday";
+  return formatShortDate(date);
+}

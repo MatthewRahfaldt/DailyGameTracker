@@ -1,46 +1,44 @@
-import type { GameResult } from "@dgt/types";
+import type { Game, GameResult } from "@dgt/types";
 import type { DateString } from "./dates";
 import { todayUtc } from "./dates";
 import type { FeedActor } from "./feed";
-import { computeGameStats, type GameStats } from "./stats";
+import { type GameStatsView, getGameModule } from "./games";
 
 /** One member's stats for a single group-assigned game. */
 export interface MemberStanding {
   actor: FeedActor;
-  stats: GameStats;
+  view: GameStatsView;
 }
 
 /**
  * One game's standings across a group's members, best-first (docs/BACKLOG.md, Milestone 5 —
  * "Group dashboard & shared stats").
  *
- * Reuses `computeGameStats` per member rather than inventing group-specific math — a group
- * leaderboard is just everyone's own stats for that game, ranked. Members with zero results for
- * this game are dropped (nothing to rank), so a group's leaderboard only ever lists people who've
- * actually played it.
- *
- * Ranked by current streak first (the thing a "keep it going" group cares about day to day), then
- * win rate (missing win/loss data — a score-based game like GeoSports — sorts after anyone with a
- * real rate, not above them), then games played as a final tiebreaker.
+ * Ranked by the game's own metric (see packages/stats/src/games): Wordle by average guesses, lower
+ * first; GeoSports by average score, higher first; and so on. Members whose metric is null (e.g.
+ * only losses in Wordle) sort after everyone with one. Ties break by current streak, then games
+ * played. Members with zero results for this game are dropped — nothing to rank.
  */
 export function buildStandings(
   members: ReadonlyArray<{ actor: FeedActor; results: readonly GameResult[] }>,
-  gameId: string,
+  game: Game,
   today: DateString = todayUtc(),
 ): MemberStanding[] {
+  const module = getGameModule(game.parserKey);
   return members
-    .map((member) => ({
-      actor: member.actor,
-      stats: computeGameStats(member.results, gameId, today),
-    }))
-    .filter((standing) => standing.stats.played > 0)
+    .map((member) => ({ actor: member.actor, view: module.stats(member.results, game.id, today) }))
+    .filter((standing) => standing.view.played > 0)
     .sort((a, b) => {
-      if (b.stats.currentStreak !== a.stats.currentStreak) {
-        return b.stats.currentStreak - a.stats.currentStreak;
+      const aValue = a.view.rankValue;
+      const bValue = b.view.rankValue;
+      if (aValue !== bValue) {
+        if (aValue === null) return 1;
+        if (bValue === null) return -1;
+        return module.rankDirection === "asc" ? aValue - bValue : bValue - aValue;
       }
-      const aRate = a.stats.winRate ?? -1;
-      const bRate = b.stats.winRate ?? -1;
-      if (bRate !== aRate) return bRate - aRate;
-      return b.stats.played - a.stats.played;
+      if (b.view.currentStreak !== a.view.currentStreak) {
+        return b.view.currentStreak - a.view.currentStreak;
+      }
+      return b.view.played - a.view.played;
     });
 }

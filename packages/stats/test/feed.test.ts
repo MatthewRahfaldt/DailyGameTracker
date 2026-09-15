@@ -18,6 +18,15 @@ function item(actorId: string, playedDate: string, gameName = "Wordle"): FeedIte
     playedDate,
     guesses: 3,
     won: true,
+    summary: {
+      resultId: `${actorId}-${gameName}-${playedDate}`,
+      gameId: GAME.id,
+      label: gameName.toUpperCase(),
+      value: "3",
+      suffix: "/6",
+      outcome: "win",
+      grid: [],
+    },
   };
 }
 

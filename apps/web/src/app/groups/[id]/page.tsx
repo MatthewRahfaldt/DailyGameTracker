@@ -219,7 +219,7 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
                       <GameLink name={game.name} url={game.url} />
                     </th>
                     <th className="p-3 font-medium">Streak</th>
-                    <th className="p-3 font-medium">Win rate</th>
+                    <th className="p-3 font-medium">Score</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -240,11 +240,9 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
                         </td>
                         <td className="p-3 font-medium">{row.actor.name}</td>
                         <td className="p-3 tabular-nums">
-                          {row.stats.currentStreak > 0 ? `${row.stats.currentStreak} 🔥` : "—"}
+                          {row.view.currentStreak > 0 ? `${row.view.currentStreak} 🔥` : "—"}
                         </td>
-                        <td className="p-3 tabular-nums">
-                          {row.stats.winRate == null ? "—" : `${Math.round(row.stats.winRate * 100)}%`}
-                        </td>
+                        <td className="p-3 tabular-nums">{row.view.line}</td>
                       </tr>
                     ))
                   )}

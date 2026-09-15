@@ -1,5 +1,6 @@
 import type { Game } from "@dgt/types";
 import type { DateString } from "./dates";
+import type { ResultSummary } from "./games/types";
 
 /** The person a feed item belongs to. */
 export interface FeedActor {
@@ -16,6 +17,8 @@ export interface FeedItem {
   playedDate: DateString;
   guesses: number | null;
   won: boolean | null;
+  /** Game-specific card data, computed on the server. */
+  summary: ResultSummary;
 }
 
 /** Feed items bucketed under a single day. */
@@ -51,9 +54,11 @@ export function mergeFeed(items: FeedItem[], since: DateString): FeedItem[] {
     });
 }
 
-/** Bucket an already-sorted feed into days, preserving the incoming order. */
-export function groupByDay(items: FeedItem[]): FeedDay[] {
-  const days: FeedDay[] = [];
+/** Bucket an already-sorted feed into days, preserving the incoming order and item type. */
+export function groupByDay<T extends { playedDate: DateString }>(
+  items: readonly T[],
+): Array<{ date: DateString; items: T[] }> {
+  const days: Array<{ date: DateString; items: T[] }> = [];
   for (const item of items) {
     const last = days[days.length - 1];
     if (last && last.date === item.playedDate) last.items.push(item);
