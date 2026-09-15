@@ -1,33 +1,36 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { dayLabel, groupByDay, todayUtc } from "@dgt/stats";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
-import { getGroupView } from "@/lib/group-view";
-import { DeleteGroupButton } from "@/components/DeleteGroupButton";
-import { GameLink } from "@/components/GameLink";
-import { GroupFeedList } from "@/components/GroupFeedList";
+import { GroupManage } from "@/components/groups/GroupManage";
+import { Reactions } from "@/components/groups/Reactions";
 import { JoinGroupForm } from "@/components/JoinGroupForm";
-import { PasswordField } from "@/components/PasswordField";
-import { ShareGroupLink } from "@/components/ShareGroupLink";
-import {
-  assignGameToGroup,
-  deleteGroup,
-  leaveGroup,
-  removeGameFromGroup,
-  resetGroupPassword,
-  updateMemberRole,
-} from "../actions";
+import { Menu } from "@/components/ui/Menu";
+import { Page } from "@/components/ui/Page";
+import { CardGrid, ResultCard } from "@/components/ui/ResultCard";
+import { SectionLabel } from "@/components/ui/SectionLabel";
+import { menuItemClass, sectionLabelClass } from "@/components/ui/styles";
+import { getGroupView } from "@/lib/group-view";
+import { prisma } from "@/lib/prisma";
+import { toGame } from "@/lib/result-rows";
 
 export const dynamic = "force-dynamic";
 
 /**
- * A single group's page (docs/BACKLOG.md, Milestone 5 — "Group dashboard & shared stats"):
- * roster + role management, admin-gated game assignment, per-game standings, and a feed with
- * emoji reactions. Non-members only ever see the name/member count and a join form — getGroupView
- * doesn't even load results for them.
+ * One group: standings and feed for the selected game (?game=<slug>, defaulting to the first
+ * assigned game), with invite/roster/games/password behind "Invite & manage". Non-members only
+ * see the name, member count and a join form — getGroupView never loads results for them.
  */
-export default async function GroupPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function GroupPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ game?: string | string[] }>;
+}) {
   const { id } = await params;
+  const { game: gameParam } = await searchParams;
+
   const session = await auth();
   if (!session?.user?.id) {
     redirect(`/api/auth/signin?callbackUrl=%2Fgroups%2F${id}`);
@@ -36,227 +39,111 @@ export default async function GroupPage({ params }: { params: Promise<{ id: stri
   const group = await getGroupView(id, session.user.id);
   if (!group) notFound();
 
-  const isMember = group.viewerRole != null;
-  const canManageGames = group.viewerRole === "owner" || group.viewerRole === "admin";
-  const isOwner = group.viewerRole === "owner";
-
-  if (!isMember) {
+  if (group.viewerRole === null) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-6 py-16">
-        <Link href="/groups" className="text-sm text-black/60 underline dark:text-white/60">
-          ← Back to groups
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold">{group.name}</h1>
-          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-            {group.members.length} member{group.members.length === 1 ? "" : "s"} ·{" "}
-            {group.hasPassword ? "password required to join" : "open to join"}
-          </p>
-        </div>
+      <Page title={group.name}>
+        <p className="text-sm text-stone-500">
+          {group.members.length} member{group.members.length === 1 ? "" : "s"} ·{" "}
+          {group.hasPassword ? "password required" : "open to join"}
+        </p>
         <JoinGroupForm code={group.inviteCode} hasPassword={group.hasPassword} />
-      </main>
+      </Page>
     );
   }
 
+  const canManageGames = group.viewerRole === "owner" || group.viewerRole === "admin";
   const assignedIds = new Set(group.games.map((game) => game.id));
   const assignableGames = canManageGames
-    ? (await prisma.game.findMany({ orderBy: { name: "asc" } })).filter(
-        (game) => !assignedIds.has(game.id),
-      )
+    ? (await prisma.game.findMany({ orderBy: { name: "asc" } }))
+        .filter((game) => !assignedIds.has(game.id))
+        .map(toGame)
     : [];
 
+  const selected = group.standings.find((entry) => entry.game.slug === gameParam) ?? group.standings[0];
+  const feed = selected ? group.feed.filter((item) => item.game.id === selected.game.id) : [];
+  const today = todayUtc();
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 px-6 py-12">
-      <Link href="/groups" className="text-sm text-black/60 underline dark:text-white/60">
-        ← Back to groups
-      </Link>
-
-      <header className="flex flex-col gap-3">
-        <h1 className="text-2xl font-semibold">{group.name}</h1>
-        <ShareGroupLink code={group.inviteCode} />
-      </header>
-
-      <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Members ({group.members.length})</h2>
-        <ul className="flex flex-col rounded-md border border-black/10 dark:border-white/15">
-          {group.members.map((member) => (
-            <li
-              key={member.id}
-              className="flex items-center justify-between gap-3 border-b border-black/5 p-3 text-sm last:border-0 dark:border-white/10"
-            >
-              <span>{member.name}</span>
-              {isOwner && member.role !== "owner" ? (
-                <form action={updateMemberRole} className="flex items-center gap-2">
-                  <input type="hidden" name="groupId" value={group.id} />
-                  <input type="hidden" name="userId" value={member.id} />
-                  <input
-                    type="hidden"
-                    name="role"
-                    value={member.role === "admin" ? "member" : "admin"}
-                  />
-                  <button type="submit" className="text-xs text-black/50 underline dark:text-white/50">
-                    {member.role === "admin" ? "Demote to member" : "Promote to admin"}
-                  </button>
-                </form>
-              ) : (
-                <span className="text-xs text-black/50 dark:text-white/50">{member.role}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-        {!isOwner && (
-          <form action={leaveGroup} className="self-start">
-            <input type="hidden" name="groupId" value={group.id} />
-            <button type="submit" className="text-xs text-black/50 underline dark:text-white/50">
-              Leave group
-            </button>
-          </form>
-        )}
-      </section>
-
-      {isOwner && (
-        <section className="flex flex-col gap-2 rounded-md border border-black/10 p-4 dark:border-white/20">
-          <h2 className="text-sm font-medium">
-            {group.hasPassword ? "Change or remove password" : "Set a join password"}
-          </h2>
-          <form action={resetGroupPassword} className="flex items-center gap-2">
-            <input type="hidden" name="groupId" value={group.id} />
-            <PasswordField
-              name="password"
-              placeholder="New password (blank = no password)"
-              className="flex-1"
-            />
-            <button
-              type="submit"
-              className="rounded-md border border-black/10 px-3 py-2 text-sm font-medium transition-opacity hover:opacity-80 dark:border-white/20"
-            >
-              Save
-            </button>
-          </form>
-        </section>
-      )}
-
-      {isOwner && (
-        <section className="flex flex-col gap-2 rounded-md border border-red-600/30 p-4 dark:border-red-400/30">
-          <h2 className="text-sm font-medium">Danger zone</h2>
-          <p className="text-sm text-black/60 dark:text-white/60">
-            Deletes the group for everyone — members, assigned games, and the feed. Nobody&apos;s
-            personal game history is affected.
-          </p>
-          <form action={deleteGroup}>
-            <input type="hidden" name="groupId" value={group.id} />
-            <DeleteGroupButton groupName={group.name} />
-          </form>
-        </section>
-      )}
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">Assigned games ({group.games.length})</h2>
-        {group.games.length === 0 ? (
-          <p className="text-sm text-black/60 dark:text-white/60">
-            No games assigned yet. {canManageGames ? "Add one below." : "Ask an admin to add one."}
-          </p>
-        ) : (
-          <ul className="flex flex-col rounded-md border border-black/10 dark:border-white/15">
+    <Page
+      title={group.name}
+      action={
+        selected && group.games.length > 1 ? (
+          <Menu label={`${selected.game.name} ▾`}>
             {group.games.map((game) => (
-              <li
+              <Link
                 key={game.id}
-                className="flex items-center justify-between gap-3 border-b border-black/5 p-3 text-sm last:border-0 dark:border-white/10"
+                href={`/groups/${group.id}?game=${encodeURIComponent(game.slug)}`}
+                className={menuItemClass}
               >
-                <GameLink name={game.name} url={game.url} />
-                {canManageGames && (
-                  <form action={removeGameFromGroup}>
-                    <input type="hidden" name="groupId" value={group.id} />
-                    <input type="hidden" name="gameId" value={game.id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-black/50 underline dark:text-white/50"
-                    >
-                      Remove
-                    </button>
-                  </form>
-                )}
-              </li>
+                {game.name}
+              </Link>
             ))}
-          </ul>
-        )}
-        {canManageGames && assignableGames.length > 0 && (
-          <form action={assignGameToGroup} className="flex items-center gap-2">
-            <input type="hidden" name="groupId" value={group.id} />
-            <select
-              name="gameId"
-              required
-              className="rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/20"
-            >
-              {assignableGames.map((game) => (
-                <option key={game.id} value={game.id}>
-                  {game.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90"
-            >
-              Assign
-            </button>
-          </form>
-        )}
-      </section>
+          </Menu>
+        ) : undefined
+      }
+    >
+      {selected ? (
+        <>
+          <section className="flex flex-col gap-2">
+            <SectionLabel aside={selected.game.name}>Standings</SectionLabel>
+            {selected.standings.length === 0 ? (
+              <p className="text-sm text-stone-500">Nobody&apos;s played {selected.game.name} yet.</p>
+            ) : (
+              <ol className="flex flex-col divide-y divide-stone-900">
+                {selected.standings.map((row, index) => {
+                  const isMe = row.actor.id === group.viewerId;
+                  return (
+                    <li
+                      key={row.actor.id}
+                      className={`flex items-baseline justify-between gap-4 py-2.5 text-sm ${
+                        isMe ? "text-yellow-400" : "text-stone-200"
+                      }`}
+                    >
+                      <span>
+                        <span className="inline-block w-6 font-mono text-stone-600">{index + 1}</span>
+                        {isMe ? "You" : row.actor.name}
+                      </span>
+                      <span className={`font-mono ${isMe ? "text-yellow-400" : "text-green-400"}`}>
+                        {row.view.line}
+                        {row.view.currentStreak > 0 && (
+                          <span className="text-stone-500"> · {row.view.currentStreak}🔥</span>
+                        )}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </section>
 
-      {group.standings.length > 0 && (
-        <section className="flex flex-col gap-4">
-          <h2 className="text-sm font-medium">Standings</h2>
-          {group.standings.map(({ game, standings }) => (
-            <div
-              key={game.id}
-              className="overflow-x-auto rounded-md border border-black/10 dark:border-white/15"
-            >
-              <table className="w-full min-w-[420px] text-sm">
-                <thead className="text-left text-xs uppercase tracking-wide text-black/50 dark:text-white/50">
-                  <tr className="border-b border-black/10 dark:border-white/15">
-                    <th className="p-3 font-medium" colSpan={2}>
-                      <GameLink name={game.name} url={game.url} />
-                    </th>
-                    <th className="p-3 font-medium">Streak</th>
-                    <th className="p-3 font-medium">Score</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {standings.length === 0 ? (
-                    <tr>
-                      <td className="p-3 text-black/50 dark:text-white/50" colSpan={4}>
-                        Nobody&apos;s played this yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    standings.map((row, index) => (
-                      <tr
-                        key={row.actor.id}
-                        className="border-b border-black/5 last:border-0 dark:border-white/10"
-                      >
-                        <td className="p-3 tabular-nums text-black/50 dark:text-white/50">
-                          {index + 1}
-                        </td>
-                        <td className="p-3 font-medium">{row.actor.name}</td>
-                        <td className="p-3 tabular-nums">
-                          {row.view.currentStreak > 0 ? `${row.view.currentStreak} 🔥` : "—"}
-                        </td>
-                        <td className="p-3 tabular-nums">{row.view.line}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+          {groupByDay(feed).map((day) => (
+            <section key={day.date} className="flex flex-col gap-3">
+              <SectionLabel>{dayLabel(day.date, today)}</SectionLabel>
+              <CardGrid>
+                {day.items.map((item) => (
+                  <ResultCard
+                    key={item.id}
+                    summary={item.summary}
+                    who={item.actor.id === group.viewerId ? "You" : item.actor.name}
+                    footer={<Reactions groupId={group.id} resultId={item.id} reactions={item.reactions} />}
+                  />
+                ))}
+              </CardGrid>
+            </section>
           ))}
-        </section>
+        </>
+      ) : (
+        <p className="text-sm text-stone-500">
+          No games assigned yet.{canManageGames ? " Add one under Invite & manage." : ""}
+        </p>
       )}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-sm font-medium">Feed</h2>
-        <GroupFeedList groupId={group.id} items={group.feed} />
-      </section>
-    </main>
+      <details className="border-t border-stone-900 pt-4">
+        <summary className={sectionLabelClass}>⋯ Invite &amp; manage</summary>
+        <div className="pt-4">
+          <GroupManage group={group} assignableGames={assignableGames} />
+        </div>
+      </details>
+    </Page>
   );
 }
