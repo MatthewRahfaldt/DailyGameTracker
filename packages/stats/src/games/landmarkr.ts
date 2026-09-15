@@ -1,19 +1,14 @@
-import type { GameResult } from "@dgt/types";
-import { isRecord, readGrid } from "./data";
+import { readResultGrid } from "./data";
 import { formatAverage, formatPercent, mean, plural } from "./format";
 import { baseSummary, cardFields, commonStats, dailyResults, detail } from "./generic";
 import type { GameModule } from "./types";
-
-function readLandmarkrGrid(result: GameResult): string[] | null {
-  return isRecord(result.parsedData) ? readGrid(result.parsedData) : null;
-}
 
 export const landmarkrModule: GameModule = {
   parserKey: "landmarkr",
   rankDirection: "asc",
 
   summarize(result, game) {
-    const grid = readLandmarkrGrid(result);
+    const grid = readResultGrid(result);
     if (!grid) return baseSummary(result, game);
     if (result.won === true && typeof result.guesses === "number") {
       return {

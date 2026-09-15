@@ -1,19 +1,15 @@
 import type { GameResult } from "@dgt/types";
-import { isRecord, readGrid } from "./data";
+import { readResultGrid } from "./data";
 import { formatAverage, formatPercent, mean } from "./format";
 import { baseSummary, cardFields, commonStats, dailyResults, detail } from "./generic";
 import type { GameModule } from "./types";
-
-function readWordleGrid(result: GameResult): string[] | null {
-  return isRecord(result.parsedData) ? readGrid(result.parsedData) : null;
-}
 
 export const wordleModule: GameModule = {
   parserKey: "wordle",
   rankDirection: "asc",
 
   summarize(result, game) {
-    const grid = readWordleGrid(result);
+    const grid = readResultGrid(result);
     if (!grid) return baseSummary(result, game);
     if (result.won === true && typeof result.guesses === "number") {
       return { ...cardFields(result, game, grid), value: String(result.guesses), suffix: "/6", outcome: "win" };
