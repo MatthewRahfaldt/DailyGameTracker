@@ -27,7 +27,7 @@ export interface GameStats {
  * win-rate denominator. Last write wins, matching buildHeatmap and the
  * @@unique([userId, gameId, playedDate]) constraint in prisma/schema.prisma.
  */
-function dedupeByDay(
+export function dedupeByDay(
   results: readonly GameResult[],
   gameId: string,
 ): Map<DateString, GameResult> {

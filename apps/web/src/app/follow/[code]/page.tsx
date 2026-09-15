@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { prisma } from "@/lib/prisma";
+import { Page } from "@/components/ui/Page";
+import { pageTitleClass, primaryButtonClass, quietButtonClass } from "@/components/ui/styles";
 import { followByCode } from "@/lib/follow-actions";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -25,58 +27,46 @@ export default async function FollowPage({
 
   const target = await prisma.user.findUnique({
     where: { followCode: code },
-    select: { id: true, name: true, image: true },
+    select: { id: true, name: true },
   });
 
   const shell = (children: React.ReactNode) => (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-6 px-6 py-12 text-center">
-      {children}
-      <Link href="/feed" className="text-sm text-black/60 underline dark:text-white/60">
+    <Page>
+      <div className="flex flex-col items-start gap-4">{children}</div>
+      <Link href="/feed" className={quietButtonClass}>
         Go to your feed
       </Link>
-    </main>
+    </Page>
   );
 
   if (!target) {
-    return shell(
-      <p className="text-sm">
-        <strong>This follow link isn&apos;t valid.</strong> Ask for a fresh one.
-      </p>,
-    );
+    return shell(<p className="text-sm text-stone-300">This follow link isn&apos;t valid. Ask for a fresh one.</p>);
   }
 
   if (target.id === session.user.id) {
-    return shell(<p className="text-sm">That&apos;s your own follow link — share it with someone else.</p>);
+    return shell(<p className="text-sm text-stone-300">That&apos;s your own follow link — share it with someone else.</p>);
   }
 
-  // `done` is a URL query param — a crafted `?done=ok` link must never be trusted to mean the
-  // Follow relationship exists. Re-derive that from the database; `done` only ever picks the
-  // wording (freshly-followed vs. already-following) for a state the DB has confirmed is real.
+  // `done` only picks the wording; whether the follow exists always comes from the database.
   const existing = await prisma.follow.findUnique({
-    where: {
-      followerId_followingId: { followerId: session.user.id, followingId: target.id },
-    },
+    where: { followerId_followingId: { followerId: session.user.id, followingId: target.id } },
     select: { followerId: true },
   });
 
+  const name = target.name ?? "this person";
+
   if (existing) {
     return shell(
-      done === "ok" ? (
-        <p className="text-sm">
-          You now follow <strong>{target.name ?? "this person"}</strong>.
-        </p>
-      ) : (
-        <p className="text-sm">You already follow {target.name ?? "this person"}.</p>
-      ),
+      <p className="text-sm text-stone-300">
+        {done === "ok" ? `You now follow ${name}.` : `You already follow ${name}.`}
+      </p>,
     );
   }
 
   return shell(
     <>
-      <h1 className="text-xl font-semibold">Follow {target.name ?? "this person"}?</h1>
-      <p className="text-sm text-black/60 dark:text-white/60">
-        You&apos;ll see their daily game results in your feed.
-      </p>
+      <h1 className={pageTitleClass}>Follow {name}?</h1>
+      <p className="text-sm text-stone-500">You&apos;ll see their daily game results in your feed.</p>
       <form
         action={async () => {
           "use server";
@@ -84,10 +74,7 @@ export default async function FollowPage({
           redirect(`/follow/${code}?done=${outcome.status}`);
         }}
       >
-        <button
-          type="submit"
-          className="rounded-md border border-black/10 px-4 py-2 text-sm font-medium transition-opacity hover:opacity-80 dark:border-white/20"
-        >
+        <button type="submit" className={primaryButtonClass}>
           Follow
         </button>
       </form>

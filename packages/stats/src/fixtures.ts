@@ -18,6 +18,46 @@ function rng(seed: number): () => number {
   };
 }
 
+const WORDLE_CELLS = ["🟩", "🟨", "⬛"];
+
+/** True when every cell in `cells` is the same string. Wrapped in its own function (rather than
+ * an inline `.every()`) so TS doesn't narrow the caller's array to a single-literal tuple type. */
+function allSame(cells: string[]): boolean {
+  return cells.every((cell) => cell === cells[0]);
+}
+
+/** One 5-square Wordle row. `allGreen` forces the winning row; otherwise a green sweep is nudged off. */
+function wordleRow(allGreen: boolean, random: () => number): string {
+  if (allGreen) return "🟩".repeat(5);
+  const cells: string[] = Array.from({ length: 5 }, () => WORDLE_CELLS[Math.floor(random() * WORDLE_CELLS.length)]);
+  if (cells[0] === "🟩" && allSame(cells)) cells[0] = "⬛";
+  return cells.join("");
+}
+
+/** A full Wordle grid: `rows` guesses, the last one all-green only when `won`. */
+function wordleGrid(rows: number, won: boolean, random: () => number): string[] {
+  return Array.from({ length: rows }, (_, index) => wordleRow(won && index === rows - 1, random));
+}
+
+const CONNECTIONS_COLORS = ["🟨", "🟩", "🟦", "🟪"];
+
+/** A Connections grid: one solid row per solved group, plus one mixed row per mistake. */
+function connectionsGrid(solvedGroups: number, mistakes: number, random: () => number): string[] {
+  const rows: string[] = [];
+  for (let i = 0; i < solvedGroups; i++) rows.push(CONNECTIONS_COLORS[i].repeat(4));
+  for (let i = 0; i < mistakes; i++) {
+    const cells: string[] = Array.from(
+      { length: 4 },
+      () => CONNECTIONS_COLORS[Math.floor(random() * CONNECTIONS_COLORS.length)],
+    );
+    if (allSame(cells)) {
+      cells[0] = CONNECTIONS_COLORS[(CONNECTIONS_COLORS.indexOf(cells[0]) + 1) % CONNECTIONS_COLORS.length];
+    }
+    rows.push(cells.join(""));
+  }
+  return rows;
+}
+
 export const SAMPLE_GAMES: Game[] = [
   {
     id: "game-wordle",
@@ -84,17 +124,35 @@ export function makeFixture(options: FixtureOptions): Fixture {
 
       // Roughly a 1-in-12 loss rate; winners skew toward 3-5 guesses.
       const won = random() > 0.08;
-      const guesses = won ? 2 + Math.floor(random() * 5) : undefined;
+      const puzzleNumber = 1000 + dates.indexOf(playedDate);
+
+      let guesses: number | null;
+      let parsedData: Record<string, unknown>;
+
+      if (game.parserKey === "wordle") {
+        const rows = won ? 2 + Math.floor(random() * 5) : 6;
+        guesses = won ? rows : null;
+        parsedData = { puzzleNumber, hardMode: false, grid: wordleGrid(rows, won, random) };
+      } else if (game.parserKey === "connections") {
+        const solvedGroups = won ? 4 : Math.floor(random() * 4);
+        const mistakes = won ? Math.floor(random() * 4) : 4;
+        const grid = connectionsGrid(solvedGroups, mistakes, random);
+        guesses = grid.length;
+        parsedData = { puzzleNumber, grid, mistakes, solvedGroups };
+      } else {
+        guesses = won ? 2 + Math.floor(random() * 5) : null;
+        parsedData = { puzzleNumber };
+      }
 
       results.push({
         id: `result-${game.slug}-${playedDate}`,
         userId,
         gameId: game.id,
         playedDate,
-        guesses: guesses ?? null,
+        guesses,
         won,
         rawText: `${game.name} ${playedDate} ${won ? `${guesses}/6` : "X/6"}`,
-        parsedData: { puzzleNumber: 1000 + dates.indexOf(playedDate) },
+        parsedData,
       });
     }
   }

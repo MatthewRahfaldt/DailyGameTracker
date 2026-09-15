@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { joinGroupByCode } from "@/app/groups/actions";
+import { fieldLabelClass, inputClass, primaryButtonClass } from "@/components/ui/styles";
 
 /**
  * Join-a-group form (docs/BACKLOG.md, Milestone 5 — "Create/join group UI"). Used two ways:
@@ -53,7 +54,7 @@ export function JoinGroupForm({ code, hasPassword }: { code?: string; hasPasswor
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {!code && (
         <div className="flex flex-col gap-1">
-          <label htmlFor="join-code" className="text-sm font-medium">
+          <label htmlFor="join-code" className={fieldLabelClass}>
             Invite code
           </label>
           <input
@@ -61,12 +62,12 @@ export function JoinGroupForm({ code, hasPassword }: { code?: string; hasPasswor
             value={codeInput}
             onChange={(event) => setCodeInput(event.target.value)}
             placeholder="Paste the code your friend sent you"
-            className="rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/20"
+            className={inputClass}
           />
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <label htmlFor="join-password" className="text-sm font-medium">
+        <label htmlFor="join-password" className={fieldLabelClass}>
           Password{hasPassword === false ? " (not required)" : ""}
         </label>
         <input
@@ -75,18 +76,18 @@ export function JoinGroupForm({ code, hasPassword }: { code?: string; hasPasswor
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           placeholder={hasPassword ? "Required" : "Leave blank if none"}
-          className="rounded-md border border-black/10 bg-transparent px-3 py-2 text-sm dark:border-white/20"
+          className={inputClass}
         />
       </div>
       <button
         type="submit"
         disabled={isPending}
-        className="self-start rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-50"
+        className={`${primaryButtonClass} self-start`}
       >
         {isPending ? "Joining…" : "Join group"}
       </button>
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm text-red-400" role="alert">
           {error}
         </p>
       )}

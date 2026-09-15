@@ -5,7 +5,7 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "scripts": {
-    "test": "tsx --test test/dates.test.ts test/heatmap.test.ts test/stats.test.ts test/weeks.test.ts test/feed.test.ts test/groupStats.test.ts"
+    "test": "tsx --test test/dates.test.ts test/heatmap.test.ts test/stats.test.ts test/weeks.test.ts test/feed.test.ts test/groupStats.test.ts test/games/generic.test.ts test/games/wordle.test.ts test/games/connections.test.ts test/games/catfishing.test.ts test/games/landmarkr.test.ts test/games/geoScore.test.ts test/dayLabel.test.ts"
   },
   "dependencies": {
     "@dgt/types": "*"

@@ -2,19 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Dark-only "scoreboard" theme — see docs/superpowers/specs/2026-09-14-ui-redesign-design.md. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: dark;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  background: #0c0a09;
+  color: #e7e5e4;
+}
+
+/* <details> menus and disclosures draw their own affordances. */
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+details > summary::-webkit-details-marker {
+  display: none;
 }

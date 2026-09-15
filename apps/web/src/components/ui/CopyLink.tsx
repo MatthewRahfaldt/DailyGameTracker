@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { sectionLabelClass } from "./styles";
 
-/** Your personal follow link, with a copy button. Anyone signed in who opens it can follow you. */
-export function ShareFollowLink({ code }: { code: string }) {
+/** A shareable link (follow link, group invite) with a copy button. */
+export function CopyLink({ label, path }: { label: string; path: string }) {
   const [origin, setOrigin] = useState("");
   const [copied, setCopied] = useState(false);
 
@@ -15,13 +16,13 @@ export function ShareFollowLink({ code }: { code: string }) {
     return () => clearTimeout(timeoutId);
   }, [copied]);
 
-  const url = origin ? `${origin}/follow/${code}` : `/follow/${code}`;
+  const url = `${origin}${path}`;
 
   return (
-    <section className="flex flex-col gap-2">
-      <h2 className="text-sm font-medium">Your follow link</h2>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 overflow-x-auto rounded-md border border-black/10 p-2 text-xs dark:border-white/20">
+    <div className="flex flex-col gap-2">
+      <p className={sectionLabelClass}>{label}</p>
+      <div className="flex items-center gap-3 border-b border-stone-800 pb-2">
+        <code className="flex-1 overflow-x-auto whitespace-nowrap font-mono text-xs text-stone-400">
           {url}
         </code>
         <button
@@ -30,11 +31,11 @@ export function ShareFollowLink({ code }: { code: string }) {
             await navigator.clipboard.writeText(url);
             setCopied(true);
           }}
-          className="rounded-md border border-black/10 px-3 py-2 text-sm font-medium transition-opacity hover:opacity-80 dark:border-white/20"
+          className="font-mono text-xs uppercase tracking-wider text-yellow-400"
         >
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-    </section>
+    </div>
   );
 }

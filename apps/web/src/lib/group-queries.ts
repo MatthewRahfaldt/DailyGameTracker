@@ -1,6 +1,7 @@
-import { type DateString, type FeedItem, normalizeDate, toUtcDate } from "@dgt/stats";
+import { type DateString, type FeedItem, normalizeDate, summarizeResult, toUtcDate } from "@dgt/stats";
 import type { GameResult } from "@dgt/types";
 import { prisma } from "@/lib/prisma";
+import { toGame, toGameResult } from "@/lib/result-rows";
 
 export interface ReactionSummary {
   emoji: string;
@@ -58,23 +59,13 @@ export async function loadGroupFeedResults(
       byEmoji.set(reaction.emoji, existing);
     }
 
+    const game = toGame(row.game);
     return {
       id: row.id,
-      actor: {
-        id: row.user.id,
-        name: row.user.name ?? "Someone",
-        image: row.user.image ?? null,
-      },
-      game: {
-        id: row.game.id,
-        slug: row.game.slug,
-        name: row.game.name,
-        parserKey: row.game.parserKey,
-        url: row.game.url,
-      },
+      actor: { id: row.user.id, name: row.user.name ?? "Someone", image: row.user.image ?? null },
+      game,
       playedDate: normalizeDate(row.playedDate),
-      guesses: row.guesses,
-      won: row.won,
+      summary: summarizeResult(toGameResult(row), game),
       reactions: [...byEmoji.entries()].map(([emoji, { count, reactedByMe }]) => ({
         emoji,
         count,
@@ -105,16 +96,7 @@ export async function loadGroupMemberResults(
   const byUser = new Map<string, GameResult[]>();
   for (const row of results) {
     const list = byUser.get(row.userId) ?? [];
-    list.push({
-      id: row.id,
-      userId: row.userId,
-      gameId: row.gameId,
-      playedDate: normalizeDate(row.playedDate),
-      guesses: row.guesses,
-      won: row.won,
-      rawText: row.rawText,
-      parsedData: (row.parsedData as Record<string, unknown> | null) ?? null,
-    });
+    list.push(toGameResult(row));
     byUser.set(row.userId, list);
   }
 

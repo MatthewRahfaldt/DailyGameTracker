@@ -1,6 +1,6 @@
-import { type DateString, type FeedItem, normalizeDate, toUtcDate } from "@dgt/stats";
-import type { GameResult } from "@dgt/types";
+import { type DateString, type FeedItem, normalizeDate, summarizeResult, toUtcDate } from "@dgt/stats";
 import { prisma } from "@/lib/prisma";
+import { toGame, toGameResult } from "@/lib/result-rows";
 
 /**
  * Real feed results, loaded from `GameResult` rows for everyone `viewerId` follows.
@@ -31,52 +31,15 @@ export async function loadFeedResults(
     take: 200,
   });
 
-  return rows.map((row) => ({
-    id: row.id,
-    actor: {
-      id: row.user.id,
-      name: row.user.name ?? "Someone",
-      image: row.user.image ?? null,
-    },
-    game: {
-      id: row.game.id,
-      slug: row.game.slug,
-      name: row.game.name,
-      parserKey: row.game.parserKey,
-      url: row.game.url,
-    },
-    playedDate: normalizeDate(row.playedDate),
-    guesses: row.guesses,
-    won: row.won,
-  }));
-}
-
-/**
- * Real results for the profile page (app/u/[id]/page.tsx).
- *
- * Note: A caller must also load the target user's Game/UserGame rows to supply
- * `games` and `assignedGameIds` — this function returns results only.
- */
-export async function loadUserResults(
-  userId: string,
-  range: { start: DateString; end: DateString },
-): Promise<GameResult[]> {
-  const rows = await prisma.gameResult.findMany({
-    where: {
-      userId,
-      playedDate: { gte: toUtcDate(range.start), lte: toUtcDate(range.end) },
-    },
-    orderBy: { playedDate: "asc" },
+  return rows.map((row) => {
+    const game = toGame(row.game);
+    return {
+      id: row.id,
+      actor: { id: row.user.id, name: row.user.name ?? "Someone", image: row.user.image ?? null },
+      game,
+      playedDate: normalizeDate(row.playedDate),
+      // Computed here so the page never needs rawText/parsedData.
+      summary: summarizeResult(toGameResult(row), game),
+    };
   });
-
-  return rows.map((row) => ({
-    id: row.id,
-    userId: row.userId,
-    gameId: row.gameId,
-    playedDate: normalizeDate(row.playedDate),
-    guesses: row.guesses,
-    won: row.won,
-    rawText: row.rawText,
-    parsedData: (row.parsedData as Record<string, unknown> | null) ?? null,
-  }));
 }

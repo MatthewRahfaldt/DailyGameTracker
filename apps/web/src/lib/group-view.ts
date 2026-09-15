@@ -22,6 +22,7 @@ export interface GroupView {
   id: string;
   name: string;
   inviteCode: string;
+  viewerId: string;
   hasPassword: boolean;
   /** null when the viewer isn't a member — the page uses this to gate the feed/stats/roster. */
   viewerRole: GroupRole | null;
@@ -72,6 +73,7 @@ export async function getGroupView(groupId: string, viewerId: string): Promise<G
     id: group.id,
     name: group.name,
     inviteCode: group.inviteCode,
+    viewerId,
     hasPassword: group.passwordHash != null,
     viewerRole: (viewerMembership?.role as GroupRole | undefined) ?? null,
     members: group.members.map((m) => ({
@@ -81,10 +83,10 @@ export async function getGroupView(groupId: string, viewerId: string): Promise<G
       role: m.role as GroupRole,
     })),
     games,
-    feed: mergeFeed(feed, since) as GroupFeedItem[],
+    feed: mergeFeed(feed, since),
     standings: games.map((game) => ({
       game,
-      standings: buildStandings(memberResults, game.id),
+      standings: buildStandings(memberResults, game),
     })),
   };
 }

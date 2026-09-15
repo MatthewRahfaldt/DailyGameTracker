@@ -1,5 +1,6 @@
 import type { Game } from "@dgt/types";
 import type { DateString } from "./dates";
+import type { ResultSummary } from "./games/types";
 
 /** The person a feed item belongs to. */
 export interface FeedActor {
@@ -14,14 +15,8 @@ export interface FeedItem {
   actor: FeedActor;
   game: Game;
   playedDate: DateString;
-  guesses: number | null;
-  won: boolean | null;
-}
-
-/** Feed items bucketed under a single day. */
-export interface FeedDay {
-  date: DateString;
-  items: FeedItem[];
+  /** Game-specific card data, computed on the server. */
+  summary: ResultSummary;
 }
 
 /**
@@ -41,8 +36,8 @@ export function seedFrom(userId: string): number {
  * Sort newest first and drop anything before `since` (inclusive).
  * Same-day ties break by actor id then game name so the order is stable across renders.
  */
-export function mergeFeed(items: FeedItem[], since: DateString): FeedItem[] {
-  return items
+export function mergeFeed<T extends FeedItem>(items: readonly T[], since: DateString): T[] {
+  return [...items]
     .filter((i) => i.playedDate >= since)
     .sort((a, b) => {
       if (a.playedDate !== b.playedDate) return a.playedDate < b.playedDate ? 1 : -1;
@@ -51,9 +46,11 @@ export function mergeFeed(items: FeedItem[], since: DateString): FeedItem[] {
     });
 }
 
-/** Bucket an already-sorted feed into days, preserving the incoming order. */
-export function groupByDay(items: FeedItem[]): FeedDay[] {
-  const days: FeedDay[] = [];
+/** Bucket an already-sorted feed into days, preserving the incoming order and item type. */
+export function groupByDay<T extends { playedDate: DateString }>(
+  items: readonly T[],
+): Array<{ date: DateString; items: T[] }> {
+  const days: Array<{ date: DateString; items: T[] }> = [];
   for (const item of items) {
     const last = days[days.length - 1];
     if (last && last.date === item.playedDate) last.items.push(item);

@@ -74,14 +74,14 @@ export function buildHeatmap(
  * Cells before the first day or after the last are `null` so the grid stays rectangular
  * instead of ragged at the edges.
  */
-export function toWeeks(days: readonly HeatmapDay[]): (HeatmapDay | null)[][] {
+export function toWeeks<T extends { date: DateString }>(days: readonly T[]): (T | null)[][] {
   if (days.length === 0) return [];
 
   const byDate = new Map(days.map((day) => [day.date, day]));
   const first = startOfWeek(days[0].date);
   const last = addDays(startOfWeek(days[days.length - 1].date), 6);
 
-  const weeks: (HeatmapDay | null)[][] = [];
+  const weeks: (T | null)[][] = [];
   for (let cursor = first; diffDays(cursor, last) >= 0; cursor = addDays(cursor, 7)) {
     weeks.push(Array.from({ length: 7 }, (_, row) => byDate.get(addDays(cursor, row)) ?? null));
   }

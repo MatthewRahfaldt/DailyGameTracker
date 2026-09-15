@@ -10,8 +10,6 @@ export interface FeedView {
   following: FeedActor[];
   items: FeedItem[];
   since: DateString;
-  /** True while results are generated. Drives the demo banner. */
-  isDemo: boolean;
 }
 
 /**
@@ -42,6 +40,5 @@ export async function getFeedView(viewerId: string): Promise<FeedView> {
     following,
     items: mergeFeed(items, since),
     since,
-    isDemo: false,
   };
 }
