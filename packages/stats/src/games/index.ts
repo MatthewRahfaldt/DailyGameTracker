@@ -3,6 +3,7 @@ import { type DateString, todayUtc } from "../dates";
 import { catfishingModule } from "./catfishing";
 import { connectionsModule } from "./connections";
 import { genericModule } from "./generic";
+import { landmarkrModule } from "./landmarkr";
 import { wordleModule } from "./wordle";
 import type { GameModule, GameStatsView, ResultSummary } from "./types";
 
@@ -15,7 +16,7 @@ export type {
   StatDetail,
 } from "./types";
 
-const MODULES: readonly GameModule[] = [wordleModule, connectionsModule, catfishingModule];
+const MODULES: readonly GameModule[] = [wordleModule, connectionsModule, catfishingModule, landmarkrModule];
 
 const BY_PARSER_KEY = new Map(MODULES.map((module) => [module.parserKey, module]));
 
