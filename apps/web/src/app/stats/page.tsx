@@ -1,58 +1,28 @@
 import Link from "next/link";
-import { CalendarHeatmap } from "@/components/CalendarHeatmap";
-import { GameStatsTable, HeadlineStats } from "@/components/StatsSummary";
-import { getStatsView } from "@/lib/demo-data";
+import { StatsView } from "@/components/stats/StatsView";
+import { Page } from "@/components/ui/Page";
+import { getMyStats } from "@/lib/demo-data";
 
-// Real data depends on the signed-in session and today's date, and demo data is generated
-// relative to "today" too — either way, don't let Next freeze this at build time.
+// Depends on the session and today's date — never freeze it at build time.
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Stats — Daily Game Tracker",
-};
+export const metadata = { title: "Stats — Daily Game Tracker" };
 
 export default async function StatsPage() {
-  const { user, games, days, summary, stats, range, isDemo } = await getStatsView();
+  const { view, isDemo } = await getMyStats();
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-12">
-      <header className="flex flex-col gap-3">
-        <Link href="/" className="text-sm text-black/60 underline dark:text-white/60">
-          ← Back to paste box
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold">Stats</h1>
-          <p className="mt-1 text-sm text-black/60 dark:text-white/60">
-            {range.start} → {range.end} · all dates are UTC calendar days
-          </p>
-        </div>
-
-        {isDemo && (
-          <p
-            role="status"
-            className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-200"
-          >
-            <strong>Demo data.</strong> Showing generated results for {user.name} — nothing here
-            is saved or real.{" "}
-            <Link href="/" className="underline">
-              Sign in
-            </Link>{" "}
-            and paste a result to start building your own.
-          </p>
-        )}
-      </header>
-
-      <HeadlineStats summary={summary} />
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Activity</h2>
-        <CalendarHeatmap days={days} games={games} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Per-game</h2>
-        <GameStatsTable stats={stats} games={games} />
-      </section>
-    </main>
+    <Page>
+      {isDemo && (
+        <p role="status" className="text-sm text-stone-500">
+          Sample data —{" "}
+          <Link href="/" className="text-stone-300 underline underline-offset-4">
+            sign in
+          </Link>{" "}
+          to track your own.
+        </p>
+      )}
+      <StatsView view={view} />
+    </Page>
   );
 }

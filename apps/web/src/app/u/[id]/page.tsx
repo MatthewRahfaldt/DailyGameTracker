@@ -1,20 +1,13 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import {
-  type HeatmapDay,
-  buildHeatmap,
-  canViewProfile,
-  computeAllStats,
-  summarizeHeatmap,
-  todayUtc,
-  trailingYear,
-} from "@dgt/stats";
-import type { Game } from "@dgt/types";
+import { canViewProfile, todayUtc } from "@dgt/stats";
 import { auth } from "@/auth";
+import { StatsView } from "@/components/stats/StatsView";
+import { Page } from "@/components/ui/Page";
+import { quietButtonClass } from "@/components/ui/styles";
+import { unfollow } from "@/lib/follow-actions";
 import { prisma } from "@/lib/prisma";
-import { CalendarHeatmap } from "@/components/CalendarHeatmap";
-import { GameStatsTable, HeadlineStats } from "@/components/StatsSummary";
-import { loadUserResults } from "@/lib/feed-queries";
+import { loadStatsInputs } from "@/lib/stats-queries";
+import { buildStatsPageView } from "@/lib/stats-view";
 
 export const dynamic = "force-dynamic";
 
@@ -25,78 +18,43 @@ export default async function ProfilePage({ params }: { params: Promise<{ id: st
   if (!session?.user?.id) {
     redirect(`/api/auth/signin?callbackUrl=${encodeURIComponent(`/u/${id}`)}`);
   }
+  const viewerId = session.user.id;
 
   const follows = await prisma.follow.findMany({
-    where: { followerId: session.user.id },
+    where: { followerId: viewerId },
     select: { followingId: true },
   });
+  const followingIds = follows.map((follow) => follow.followingId);
 
   // 404 rather than 403: don't confirm whether this id exists to someone who can't see it.
-  if (!canViewProfile(session.user.id, id, follows.map((f) => f.followingId))) notFound();
+  if (!canViewProfile(viewerId, id, followingIds)) notFound();
 
-  const person = await prisma.user.findUnique({
-    where: { id },
-    select: { id: true, name: true },
-  });
+  const person = await prisma.user.findUnique({ where: { id }, select: { id: true, name: true } });
   if (!person) notFound();
 
   const today = todayUtc();
-  const range = trailingYear(today);
-
-  const userGames = await prisma.userGame.findMany({
-    where: { userId: id },
-    include: { game: true },
-  });
-  const games: Game[] = userGames.map(({ game }) => ({
-    id: game.id,
-    slug: game.slug,
-    name: game.name,
-    parserKey: game.parserKey,
-    url: game.url,
-  }));
-  const assignedGameIds = games.map((game) => game.id);
-
-  const results = await loadUserResults(id, range);
-  const days = buildHeatmap(results, assignedGameIds, range);
-
-  // `days` (via HeatmapDay.results) carries full GameResult rows, including `rawText` (the
-  // target user's verbatim pasted text) and `parsedData` — fields the UI never reads, only
-  // game name / won / guesses. `CalendarHeatmap` is a "use client" component, so whatever is
-  // in its props gets serialized into the RSC payload sent to the viewer's browser: without
-  // this, one person's raw pastes for a full year ship to anyone allowed to view their profile.
-  //
-  // `loadUserResults` can't just stop returning those fields: `buildHeatmap`/`computeAllStats`
-  // (packages/stats, out of scope to modify) both declare their `results` parameter as
-  // `readonly GameResult[]`, which requires `rawText` — a narrower return type for
-  // `loadUserResults` fails to satisfy those signatures (verified: TS2345, "Property 'rawText'
-  // is missing in type ... but required in type 'GameResult'"). So redact right here, at the
-  // last point before the prop crosses the client boundary, replacing the two fields with
-  // innocuous placeholders that still satisfy `GameResult`'s required shape.
-  const clientDays: HeatmapDay[] = days.map((day) => ({
-    ...day,
-    results: day.results.map((result) => ({ ...result, rawText: "", parsedData: null })),
-  }));
+  const { games, results } = await loadStatsInputs(id, today);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-4xl flex-col gap-8 px-6 py-12">
-      <header className="flex flex-col gap-3">
-        <Link href="/feed" className="text-sm text-black/60 underline dark:text-white/60">
-          ← Back to feed
-        </Link>
-        <h1 className="text-2xl font-semibold">{person.name ?? "Player"}</h1>
-      </header>
-
-      <HeadlineStats summary={summarizeHeatmap(days)} />
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Activity</h2>
-        <CalendarHeatmap days={clientDays} games={games} />
-      </section>
-
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-medium">Per-game</h2>
-        <GameStatsTable stats={computeAllStats(results, assignedGameIds, today)} games={games} />
-      </section>
-    </main>
+    <Page
+      title={person.name ?? "Player"}
+      action={
+        id !== viewerId && followingIds.includes(id) ? (
+          <form
+            action={async () => {
+              "use server";
+              await unfollow(id);
+              redirect("/feed");
+            }}
+          >
+            <button type="submit" className={quietButtonClass}>
+              Unfollow
+            </button>
+          </form>
+        ) : undefined
+      }
+    >
+      <StatsView view={buildStatsPageView(results, games, today)} />
+    </Page>
   );
 }

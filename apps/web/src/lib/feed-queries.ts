@@ -1,5 +1,4 @@
 import { type DateString, type FeedItem, normalizeDate, summarizeResult, toUtcDate } from "@dgt/stats";
-import type { GameResult } from "@dgt/types";
 import { prisma } from "@/lib/prisma";
 import { toGame, toGameResult } from "@/lib/result-rows";
 
@@ -45,25 +44,4 @@ export async function loadFeedResults(
       summary: summarizeResult(toGameResult(row), game),
     };
   });
-}
-
-/**
- * Real results for the profile page (app/u/[id]/page.tsx).
- *
- * Note: A caller must also load the target user's Game/UserGame rows to supply
- * `games` and `assignedGameIds` — this function returns results only.
- */
-export async function loadUserResults(
-  userId: string,
-  range: { start: DateString; end: DateString },
-): Promise<GameResult[]> {
-  const rows = await prisma.gameResult.findMany({
-    where: {
-      userId,
-      playedDate: { gte: toUtcDate(range.start), lte: toUtcDate(range.end) },
-    },
-    orderBy: { playedDate: "asc" },
-  });
-
-  return rows.map(toGameResult);
 }
