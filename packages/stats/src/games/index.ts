@@ -1,6 +1,7 @@
 import type { Game, GameResult } from "@dgt/types";
 import { type DateString, todayUtc } from "../dates";
 import { genericModule } from "./generic";
+import { wordleModule } from "./wordle";
 import type { GameModule, GameStatsView, ResultSummary } from "./types";
 
 export type {
@@ -12,7 +13,7 @@ export type {
   StatDetail,
 } from "./types";
 
-const MODULES: readonly GameModule[] = [];
+const MODULES: readonly GameModule[] = [wordleModule];
 
 const BY_PARSER_KEY = new Map(MODULES.map((module) => [module.parserKey, module]));
 
