@@ -17,10 +17,12 @@ import { inputClass } from "@/components/ui/styles";
  * you show me the current password."
  */
 export function PasswordField({
+  id,
   name,
   placeholder,
   className,
 }: {
+  id?: string;
   name: string;
   placeholder?: string;
   className?: string;
@@ -30,6 +32,7 @@ export function PasswordField({
   return (
     <div className={`relative ${className ?? ""}`}>
       <input
+        id={id}
         name={name}
         type={visible ? "text" : "password"}
         placeholder={placeholder}

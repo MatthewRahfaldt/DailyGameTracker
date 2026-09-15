@@ -5,7 +5,7 @@ import { JoinGroupForm } from "@/components/JoinGroupForm";
 import { PasswordField } from "@/components/PasswordField";
 import { Page } from "@/components/ui/Page";
 import { SectionLabel } from "@/components/ui/SectionLabel";
-import { inputClass, primaryButtonClass } from "@/components/ui/styles";
+import { fieldLabelClass, inputClass, primaryButtonClass } from "@/components/ui/styles";
 import { prisma } from "@/lib/prisma";
 import { createGroup } from "./actions";
 
@@ -51,8 +51,18 @@ export default async function GroupsPage() {
           <section className="flex flex-col gap-3">
             <SectionLabel>Create</SectionLabel>
             <form action={createGroup} className="flex flex-col gap-3">
-              <input name="name" required aria-label="Group name" placeholder="Group name" className={inputClass} />
-              <PasswordField name="password" placeholder="Password (optional)" />
+              <div className="flex flex-col gap-1">
+                <label htmlFor="create-name" className={fieldLabelClass}>
+                  Group name
+                </label>
+                <input id="create-name" name="name" required placeholder="e.g. Office" className={inputClass} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="create-password" className={fieldLabelClass}>
+                  Password (optional)
+                </label>
+                <PasswordField id="create-password" name="password" placeholder="Leave blank for open join" />
+              </div>
               <button type="submit" className={`${primaryButtonClass} self-start`}>
                 Create
               </button>
