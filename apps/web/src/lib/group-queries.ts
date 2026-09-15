@@ -65,8 +65,6 @@ export async function loadGroupFeedResults(
       actor: { id: row.user.id, name: row.user.name ?? "Someone", image: row.user.image ?? null },
       game,
       playedDate: normalizeDate(row.playedDate),
-      guesses: row.guesses,
-      won: row.won,
       summary: summarizeResult(toGameResult(row), game),
       reactions: [...byEmoji.entries()].map(([emoji, { count, reactedByMe }]) => ({
         emoji,

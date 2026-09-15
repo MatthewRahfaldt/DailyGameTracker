@@ -65,7 +65,7 @@ export function Reactions({
         >
           +
         </summary>
-        <div className="absolute left-0 z-20 mt-1 flex gap-1 rounded-md bg-stone-900 p-1.5 ring-1 ring-stone-800">
+        <div className="absolute right-0 z-20 mt-1 flex flex-wrap max-w-[calc(100vw-2.5rem)] gap-1 rounded-md bg-stone-900 p-1.5 ring-1 ring-stone-800">
           {REACTION_EMOJI.map((emoji) => (
             <ReactionButton
               key={emoji}

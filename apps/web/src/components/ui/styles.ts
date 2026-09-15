@@ -17,6 +17,12 @@ export const dangerButtonClass =
 
 export const sectionLabelClass = "font-mono text-[11px] uppercase tracking-[0.14em] text-stone-500";
 
+export const pageTitleClass = "font-mono text-sm uppercase tracking-[0.12em] text-stone-100";
+
+export const smallLabelClass = "font-mono text-[10px] uppercase tracking-[0.1em] text-stone-500";
+
+export const fieldLabelClass = "text-xs text-stone-400";
+
 export const menuPanelClass =
   "absolute z-40 mt-2 flex min-w-44 flex-col gap-0.5 rounded-md bg-stone-900 p-1.5 shadow-xl ring-1 ring-stone-800";
 

@@ -38,8 +38,6 @@ export async function loadFeedResults(
       actor: { id: row.user.id, name: row.user.name ?? "Someone", image: row.user.image ?? null },
       game,
       playedDate: normalizeDate(row.playedDate),
-      guesses: row.guesses,
-      won: row.won,
       // Computed here so the page never needs rawText/parsedData.
       summary: summarizeResult(toGameResult(row), game),
     };

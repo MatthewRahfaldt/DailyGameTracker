@@ -83,7 +83,7 @@ export async function getGroupView(groupId: string, viewerId: string): Promise<G
       role: m.role as GroupRole,
     })),
     games,
-    feed: mergeFeed(feed, since) as GroupFeedItem[],
+    feed: mergeFeed(feed, since),
     standings: games.map((game) => ({
       game,
       standings: buildStandings(memberResults, game),

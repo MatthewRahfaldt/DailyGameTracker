@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
  * "Build 'assign games to yourself' UI").
  *
  * Untracking never deletes past `GameResult` rows — it only affects whether the game counts
- * toward the "Today" checklist (`TodayDashboard`) and the heatmap/stats denominator. See the
+ * toward the Today page's checklist and the heatmap/stats denominator. See the
  * comment on `buildHeatmap` in packages/stats/src/heatmap.ts: results for a game you've
  * unassigned are ignored, not deleted, so your history comes back if you re-track it later.
  */

@@ -1,4 +1,5 @@
 import type { GameStatsView } from "@dgt/stats";
+import { smallLabelClass } from "@/components/ui/styles";
 
 /** The expanded stats for one game: detail figures plus an optional distribution chart. */
 export function GameStatsCard({ view }: { view: GameStatsView }) {
@@ -9,7 +10,7 @@ export function GameStatsCard({ view }: { view: GameStatsView }) {
       <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
         {view.details.map((entry) => (
           <div key={entry.label}>
-            <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-stone-500">{entry.label}</dt>
+            <dt className={smallLabelClass}>{entry.label}</dt>
             <dd className="font-mono text-lg text-stone-100">{entry.value}</dd>
           </div>
         ))}

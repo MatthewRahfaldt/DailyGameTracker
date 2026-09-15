@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { joinGroupByCode } from "@/app/groups/actions";
-import { inputClass, primaryButtonClass, sectionLabelClass } from "@/components/ui/styles";
+import { fieldLabelClass, inputClass, primaryButtonClass } from "@/components/ui/styles";
 
 /**
  * Join-a-group form (docs/BACKLOG.md, Milestone 5 — "Create/join group UI"). Used two ways:
@@ -54,7 +54,7 @@ export function JoinGroupForm({ code, hasPassword }: { code?: string; hasPasswor
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {!code && (
         <div className="flex flex-col gap-1">
-          <label htmlFor="join-code" className={sectionLabelClass}>
+          <label htmlFor="join-code" className={fieldLabelClass}>
             Invite code
           </label>
           <input
@@ -67,7 +67,7 @@ export function JoinGroupForm({ code, hasPassword }: { code?: string; hasPasswor
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <label htmlFor="join-password" className={sectionLabelClass}>
+        <label htmlFor="join-password" className={fieldLabelClass}>
           Password{hasPassword === false ? " (not required)" : ""}
         </label>
         <input

@@ -1,14 +1,12 @@
 import { signIn } from "@/auth";
-import { inputClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/styles";
+import { inputClass, pageTitleClass, primaryButtonClass, secondaryButtonClass } from "@/components/ui/styles";
 
 /** Signed-out home: GitHub, Google, or an email magic link. Server Actions only, no client JS. */
 export function SignInPanel() {
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h1 className="font-mono text-sm uppercase tracking-[0.12em] text-stone-100">
-          Track your daily games
-        </h1>
+        <h1 className={pageTitleClass}>Track your daily games</h1>
         <p className="mt-1 text-sm text-stone-500">
           Sign in to save results, follow friends and join groups.
         </p>

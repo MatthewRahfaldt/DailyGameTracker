@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { formatLongDate, formatMonthShort, toWeeks } from "@dgt/stats";
 import { CardGrid, ResultCard } from "@/components/ui/ResultCard";
+import { sectionLabelClass } from "@/components/ui/styles";
 import type { ClientHeatmapDay } from "@/lib/stats-view";
 
 function cellClass(day: ClientHeatmapDay): string {
@@ -64,7 +65,7 @@ export function ActivityHeatmap({ days }: { days: ClientHeatmapDay[] }) {
 
       {selected && (
         <div className="flex flex-col gap-3">
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-stone-500">
+          <p className={sectionLabelClass}>
             {formatLongDate(selected.date)} · {selected.played} / {selected.assigned}
           </p>
           {selected.cards.length > 0 ? (

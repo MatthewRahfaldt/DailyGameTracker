@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Page } from "@/components/ui/Page";
-import { primaryButtonClass, quietButtonClass } from "@/components/ui/styles";
+import { pageTitleClass, primaryButtonClass, quietButtonClass } from "@/components/ui/styles";
 import { followByCode } from "@/lib/follow-actions";
 import { prisma } from "@/lib/prisma";
 
@@ -65,7 +65,7 @@ export default async function FollowPage({
 
   return shell(
     <>
-      <h1 className="font-mono text-sm uppercase tracking-[0.12em] text-stone-100">Follow {name}?</h1>
+      <h1 className={pageTitleClass}>Follow {name}?</h1>
       <p className="text-sm text-stone-500">You&apos;ll see their daily game results in your feed.</p>
       <form
         action={async () => {

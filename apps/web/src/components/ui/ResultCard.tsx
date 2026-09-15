@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ResultSummary } from "@dgt/stats";
+import { smallLabelClass } from "./styles";
 
 const VALUE_COLOR: Record<ResultSummary["outcome"], string> = {
   win: "text-green-400",
@@ -7,7 +8,7 @@ const VALUE_COLOR: Record<ResultSummary["outcome"], string> = {
   loss: "text-red-400",
 };
 
-const LABEL_CLASS = "font-mono text-[10px] uppercase tracking-[0.1em] text-stone-500";
+const LABEL_CLASS = smallLabelClass;
 
 /** One game result: label, one big number, the share grid. Renders any game's ResultSummary. */
 export function ResultCard({

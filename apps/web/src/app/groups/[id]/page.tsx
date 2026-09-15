@@ -116,6 +116,10 @@ export default async function GroupPage({
             )}
           </section>
 
+          {feed.length === 0 && (
+            <p className="text-sm text-stone-500">Nothing in the last 30 days.</p>
+          )}
+
           {groupByDay(feed).map((day) => (
             <section key={day.date} className="flex flex-col gap-3">
               <SectionLabel>{dayLabel(day.date, today)}</SectionLabel>

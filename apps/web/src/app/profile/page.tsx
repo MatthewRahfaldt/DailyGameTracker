@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Page } from "@/components/ui/Page";
-import { inputClass, primaryButtonClass, sectionLabelClass } from "@/components/ui/styles";
+import { fieldLabelClass, inputClass, primaryButtonClass } from "@/components/ui/styles";
 import { prisma } from "@/lib/prisma";
 import { updateProfile } from "./actions";
 
@@ -19,11 +19,11 @@ export default async function ProfilePage() {
     <Page title="Profile">
       <form action={updateProfile} className="flex flex-col gap-5">
         <label className="flex flex-col gap-1.5">
-          <span className={sectionLabelClass}>Display name</span>
+          <span className={fieldLabelClass}>Display name</span>
           <input name="name" type="text" defaultValue={user.name ?? ""} placeholder="Your name" className={inputClass} />
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className={sectionLabelClass}>Timezone</span>
+          <span className={fieldLabelClass}>Timezone</span>
           <select name="timezone" defaultValue={user.timezone} className={inputClass}>
             {timezones.map((tz) => (
               <option key={tz} value={tz}>
