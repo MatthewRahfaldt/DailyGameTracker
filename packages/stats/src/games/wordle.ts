@@ -1,4 +1,3 @@
-import type { GameResult } from "@dgt/types";
 import { readResultGrid } from "./data";
 import { formatAverage, formatPercent, mean } from "./format";
 import { baseSummary, cardFields, commonStats, dailyResults, detail } from "./generic";
