@@ -21,7 +21,7 @@ behavior.
 - **Accents:** yellow `#facc15` (brand, active tab, "you" highlight, primary actions); green
   `#4ade80` for a card's number; red `#f87171` for a loss.
 - **Type:** system sans for body; monospace (`ui-monospace, Consolas`) for numbers, the logo,
-  tabs and small uppercase section labels.
+  tabs, small uppercase section labels and uppercase control labels (buttons, menu triggers).
 - **Declutter rules (apply everywhere):**
   - One job per page.
   - No boxes around boxes — spacing and single hairlines separate things. Cards are plain
@@ -134,8 +134,9 @@ GameStatsView`. This changes the groups branch's existing ranking (streak-first)
   `{ date, played, assigned, ratio, cards: ResultSummary[] }`. This replaces the rawText/parsedData
   redaction workaround in `app/u/[id]/page.tsx`.
 - Menus (game picker, `⋯`, create/join, following, stats expand) use links with query params or
-  `<details>` — no new client JS. Client components are limited to: tab bar (pathname), avatar
-  menu (closes on navigation), heatmap (day selection), paste box (existing).
+  `<details>` — no new client JS. Client components are limited to: tab bar (pathname), dropdown
+  menu incl. the avatar menu (closes after a choice), heatmap (day selection), paste box (existing),
+  and copy-link buttons (clipboard; replaces the two existing share-link client components).
 
 ## 7. Error handling
 
