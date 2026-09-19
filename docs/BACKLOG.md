@@ -1,6 +1,6 @@
 # Daily Game Tracker — Project Plan & GitHub Backlog
 
-_Last updated: 2026-09-13_
+_Last updated: 2026-09-19_
 
 This doc is meant to live in the repo (e.g. as `PLANNING.md` or `docs/BACKLOG.md`) and to be a copy/paste source for GitHub Issues. Each item under "Backlog" is written as one issue: title, suggested labels, description, and acceptance criteria.
 
@@ -122,9 +122,8 @@ daily-game-tracker/
 - ⚠️ **I couldn't write `.github/workflows/ci.yml` myself** — the device bridge refuses writes to anything under `.github/workflows/` (workflow files can run with repo secrets, so that's a deliberate guardrail, not a bug). It's attached in the conversation instead — copy it into place at `.github/workflows/ci.yml` (replacing what's there) yourself.
 - Recommend opening a small test PR after this lands to actually watch the `verify` check run once, both to confirm it's green and so it shows up as a selectable status check when setting up the branch protection rule above. I wasn't able to run this workflow myself before handing it over (no way to execute GitHub Actions from here) — the Postgres-service-container and Prisma steps follow standard, well-documented patterns, but this is the one piece of this session's work that's genuinely unverified until it runs for real.
 
-**Issue: Provision hosting and database** ⏸️ paused
+**Issue: Provision hosting and database** 🚧 in progress — resumed
 - Labels: `area:setup`
-- Paused: work-in-progress on a separate branch, deprioritized for now in favor of the Groups feature (Milestone 5) below. Nothing here is lost — pick back up from the WIP branch whenever it's next up.
 - Description: Create Vercel project (connected to repo) and managed Postgres instance (Supabase/Neon). Store connection secrets properly (Vercel env vars, `.env.local` template in repo).
 - Acceptance criteria:
   - [ ] `main` auto-deploys to a live URL on push
@@ -143,6 +142,18 @@ daily-game-tracker/
   5. Once you have the production URL, go back to the GitHub OAuth App and the Google Cloud Console OAuth client and add an authorized redirect URI for it (`https://<your-domain>/api/auth/callback/github` and `.../google`) — alongside the existing `localhost:3000` ones, not replacing them.
   6. Push to `main` (or merge a PR) to confirm auto-deploy actually fires on its own.
 - I wasn't able to do any of steps 1–6 myself (no access to your Vercel account) or verify the `vercel-build`/`directUrl` setup against a real deploy — same caveat as the CI workflow: this follows standard, well-documented Prisma + Supabase + Vercel patterns, but it's unverified until it actually runs. Let me know what happens (or paste a failed build log) and I'll help debug.
+- See "Enable Supabase Row Level Security" below, done alongside this — worth applying (`npm run db:migrate` picks up the new migration) before or right after the first deploy, since it closes off Supabase's public API regardless of whether the app itself is live yet.
+
+**Issue: Enable Supabase Row Level Security** ✅ done
+- Labels: `area:backend`, `area:setup`
+- Description: Supabase's dashboard flags every table without RLS as a security warning — not because this app's own access is unsafe (it isn't; see below), but because Supabase auto-exposes every `public`-schema table through its own REST/GraphQL API (PostgREST), reachable by anyone with the project URL and its public "anon" key, completely independent of anything apps/web does.
+- Acceptance criteria:
+  - [x] Every table has RLS enabled — `prisma/migrations/20260919023311_enable_row_level_security/migration.sql`, one `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` per table, applied like any other migration (`npm run db:migrate` locally, `db:deploy` in CI/production)
+  - [x] The app itself keeps working unaffected — confirmed by how Supabase's roles work, not by a live test I can run from here (see caveat below)
+- **Important nuance, worth understanding before assuming this "adds row-level security" in the way the name usually implies**: this does *not* add per-user policies like "a user can only see their own GameResult rows." That style of RLS policy is written against `auth.uid()`, which Supabase's own Auth (GoTrue) sets from the JWT it issues — but this app doesn't use Supabase Auth at all. Sign-in is Auth.js (GitHub/Google/Resend), with its own database-backed `Session` table; `auth.uid()` would just be `NULL` for every request this app ever makes, so a policy written against it wouldn't express anything meaningful. All per-user authorization continues to live exactly where it already did: the `auth()`/`requireRole()` checks in `apps/web`'s Server Actions.
+- What this migration actually does: enables RLS with **zero policies** on every table, which makes each one deny-by-default for the `anon`/`authenticated` Postgres roles PostgREST uses — shutting that unused API path completely. It does not touch `apps/web`, because the Postgres role in `DATABASE_URL`/`DIRECT_URL` is Supabase's default `postgres` role, which has `BYPASSRLS` — every Prisma query keeps working exactly as before.
+- Unverified from here, same as the hosting item above: I can't connect to your actual Supabase project to confirm `BYPASSRLS` on your `postgres` role or watch the app run post-migration. This is standard, documented Postgres/Supabase behavior, but worth a quick manual smoke test (paste a result, check the feed, open a group) right after running the migration, just to confirm nothing broke.
+- If a real Supabase Auth integration is ever added on top of Auth.js later, per-row `auth.uid()` policies become meaningful and can be layered onto these same tables then — this migration doesn't preclude that, it's just not applicable yet.
 
 **Issue: Create GitHub Project board and issue labels**
 - Labels: `area:setup`
