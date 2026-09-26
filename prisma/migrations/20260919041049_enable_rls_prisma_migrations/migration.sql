@@ -1,0 +1,23 @@
+-- Enable Row Level Security on Prisma's own internal migrations-history table.
+--
+-- Why: the previous migration (20260919023311_enable_row_level_security) turned on RLS for
+-- every table Prisma's schema defines, but it couldn't reach `_prisma_migrations` — that table
+-- isn't a model in prisma/schema.prisma at all; Prisma creates and manages it itself (in the
+-- `public` schema, same as everything else) purely to track which migrations have already been
+-- applied. Supabase's dashboard doesn't distinguish "Prisma's own bookkeeping table" from "this
+-- app's tables" when it flags public-schema tables without RLS — it flagged this one the same
+-- way, for the same underlying reason: Supabase's PostgREST API auto-exposes every public-schema
+-- table by default, `_prisma_migrations` included, regardless of who created it.
+--
+-- What's actually at risk without this: `_prisma_migrations` only holds migration file names,
+-- checksums, and applied-at timestamps — no user data — but it would still leak your schema's
+-- migration history (naming, timing, roughly how the app evolved) to anyone hitting the
+-- PostgREST API with the public anon key, and leaving any public-schema table RLS-disabled is
+-- worth closing off on principle even when what it exposes is low-sensitivity.
+--
+-- Same fix as before, zero policies: enabling RLS with no policies makes this table deny-by-
+-- default for the `anon`/`authenticated` PostgREST roles. It does not affect Prisma itself —
+-- Prisma connects as the `postgres` role (via DATABASE_URL/DIRECT_URL), which has BYPASSRLS, so
+-- `prisma migrate`/`db seed` keep reading and writing this table exactly as before.
+
+ALTER TABLE "_prisma_migrations" ENABLE ROW LEVEL SECURITY;
