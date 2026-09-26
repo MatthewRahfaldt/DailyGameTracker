@@ -14,9 +14,11 @@ out/
 build/
 dist/
 
-# env files
-.env
-.env*.local
+# env files — ignore every env file except the checked-in template, regardless of naming
+# (previously only ".env" and ".env*.local" were ignored, which missed a plain ".env.production"
+# or similar — a real filename Next.js recognizes)
+.env*
+!.env.example
 
 # misc
 .DS_Store
