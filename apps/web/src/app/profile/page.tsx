@@ -33,6 +33,22 @@ export default async function ProfilePage() {
           </select>
           <span className="text-xs text-stone-500">Decides which day a pasted result counts toward.</span>
         </label>
+        <label className="flex items-start gap-2">
+          <input
+            name="assumeRecentImports"
+            type="checkbox"
+            defaultChecked={user.assumeRecentImports}
+            className="mt-1 accent-yellow-400"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className={fieldLabelClass}>Assume imported results are recent</span>
+            <span className="text-xs text-stone-500">
+              When importing a past result with no year (GeoSports, GeoHistory), guess it&apos;s
+              from the last 12 months instead of asking every time. You can always fix the date
+              before saving.
+            </span>
+          </span>
+        </label>
         <button type="submit" className={`${primaryButtonClass} self-start`}>
           Save
         </button>

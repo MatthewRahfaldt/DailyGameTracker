@@ -18,6 +18,9 @@ export async function updateProfile(formData: FormData) {
 
   const name = formData.get("name");
   const timezone = formData.get("timezone");
+  // Checkboxes only appear in FormData when checked, so absence means "off" — the field can't be
+  // left in an ambiguous null/undefined state the way a text input could.
+  const assumeRecentImports = formData.get("assumeRecentImports") === "on";
 
   if (typeof timezone !== "string" || timezone.trim().length === 0) {
     throw new Error("Please choose a timezone.");
@@ -28,6 +31,7 @@ export async function updateProfile(formData: FormData) {
     data: {
       name: typeof name === "string" && name.trim().length > 0 ? name.trim() : null,
       timezone,
+      assumeRecentImports,
     },
   });
 

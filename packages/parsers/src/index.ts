@@ -14,6 +14,7 @@ export { catfishingParser };
 export { landmarkrParser };
 export { geoSportsParser };
 export { geoHistoryParser };
+export * from "./dating";
 
 /**
  * All registered parsers. Add new games here (see docs/BACKLOG.md, Milestone 2 —
