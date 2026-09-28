@@ -6,10 +6,19 @@ import { parseGameResult, UnparsableTextError } from "@dgt/parsers";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { todayInTimezone } from "@/lib/timezone";
+import { PUZZLE_NUMBERED_GAMES, resolveGeoDateForPaste, resolvePuzzleNumberedDate } from "@/lib/dating";
 
 export type SaveGameResultState =
   | { status: "error"; message: string }
-  | { status: "saved"; gameName: string; guesses?: number; won?: boolean; playedDate: string };
+  | { status: "saved"; gameName: string; guesses?: number; won?: boolean; playedDate: string }
+  | {
+      status: "needs-confirmation";
+      gameName: string;
+      guesses?: number;
+      won?: boolean;
+      proposedDate: string;
+      reason: string;
+    };
 
 /**
  * Parse pasted game-result text and persist it (docs/BACKLOG.md, Milestone 2 —
@@ -32,8 +41,24 @@ export type SaveGameResultState =
  * ever called — but this re-parses from the raw text server-side rather than trusting whatever
  * the client claims the parsed result was, so what actually lands in the database always
  * reflects the server's parser registry, never a possibly-stale client bundle.
+ *
+ * Played-date, and this box's dual role as both the daily paste box *and* the way to backfill an
+ * old result (docs/BACKLOG.md — historical import; there's no separate import page, by request —
+ * "I was hoping that this would be all through the same box"):
+ *   - The four puzzle-numbered games (Wordle, Connections, Catfishing, Landmarkr) always derive
+ *     their date from the puzzle number itself via `resolvePuzzleNumberedDate` — see
+ *     apps/web/src/lib/dating.ts — never from wall-clock "today". A puzzle number identifies
+ *     exactly one calendar day no matter when it's pasted, so this is always `certain` and never
+ *     needs confirmation, whether it's today's puzzle or one from months ago.
+ *   - GeoSports/GeoHistory print only a year-less date label ("August 29th"), so there's no
+ *     puzzle-number arithmetic to fall back on. `resolveGeoDateForPaste` takes the fast path —
+ *     `certain`, today — when the label matches today's real date (the ordinary same-day paste,
+ *     unchanged from before), and only asks the caller to confirm a proposed date when it
+ *     doesn't, i.e. when this is clearly a backfill. When `confirmedDate` is passed in (the
+ *     second round trip, after the UI showed that confirmation), it's used directly and this
+ *     resolution step is skipped entirely.
  */
-export async function saveGameResult(rawText: string): Promise<SaveGameResultState> {
+export async function saveGameResult(rawText: string, confirmedDate?: string): Promise<SaveGameResultState> {
   const session = await auth();
   if (!session?.user) {
     return { status: "error", message: "Sign in to save your result." };
@@ -65,7 +90,30 @@ export async function saveGameResult(rawText: string): Promise<SaveGameResultSta
     };
   }
 
-  const playedDate = new Date(todayInTimezone(user.timezone));
+  let playedDateIso: string;
+  if (confirmedDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(confirmedDate) || Number.isNaN(new Date(`${confirmedDate}T00:00:00Z`).getTime())) {
+      return { status: "error", message: "That doesn't look like a valid date (expected YYYY-MM-DD)." };
+    }
+    playedDateIso = confirmedDate;
+  } else if (PUZZLE_NUMBERED_GAMES.has(parser.key)) {
+    playedDateIso = (await resolvePuzzleNumberedDate(parser.key, game.id, result.data, user.timezone)).date;
+  } else {
+    const resolution = resolveGeoDateForPaste(result.data, todayInTimezone(user.timezone), user.assumeRecentImports);
+    if (resolution.confidence === "needs-confirmation") {
+      return {
+        status: "needs-confirmation",
+        gameName: parser.name,
+        guesses: result.guesses,
+        won: result.won,
+        proposedDate: resolution.date,
+        reason: resolution.reason,
+      };
+    }
+    playedDateIso = resolution.date;
+  }
+
+  const playedDate = new Date(playedDateIso);
   const parsedData = result.data as Prisma.InputJsonValue;
 
   // Pasting a result for a game you don't already track starts tracking it — there's no
@@ -103,6 +151,6 @@ export async function saveGameResult(rawText: string): Promise<SaveGameResultSta
     gameName: parser.name,
     guesses: result.guesses,
     won: result.won,
-    playedDate: todayInTimezone(user.timezone),
+    playedDate: playedDateIso,
   };
 }

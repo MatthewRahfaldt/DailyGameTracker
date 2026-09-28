@@ -20,6 +20,11 @@ model User {
   name          String?
   image         String?
   timezone      String    @default("America/Chicago")
+  /// When true (the default), the historical-import flow assumes a year-less date label (e.g.
+  /// GeoSports/GeoHistory's "August 29th") refers to sometime in the last 12 months rather than
+  /// asking the user to disambiguate from scratch every time — see resolveGeoDate in
+  /// packages/parsers/src/dating.ts and the /profile toggle that flips this.
+  assumeRecentImports Boolean @default(true)
   createdAt     DateTime  @default(now())
   followCode String @unique @default(cuid())
 

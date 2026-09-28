@@ -1,0 +1,13 @@
+-- Historical import (docs/BACKLOG.md): a user-level setting that decides how a year-less
+-- Geo-family date label ("August 29th") gets disambiguated during import. Defaults to true.
+--
+-- Created by hand rather than via `prisma migrate dev`, which fails with P1014 on *any* schema
+-- change right now — not specific to this column. Its shadow-database replay re-runs the full
+-- migration history on every invocation, and migration 20260919041049_enable_rls_prisma_migrations
+-- (which enables RLS directly on Prisma's own `_prisma_migrations` bookkeeping table) never
+-- replays cleanly there. See that migration's comment for the full explanation. Applying this file
+-- with `npx prisma migrate deploy` (no shadow database involved) works the same way it did for
+-- that migration.
+--
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "assumeRecentImports" BOOLEAN NOT NULL DEFAULT true;

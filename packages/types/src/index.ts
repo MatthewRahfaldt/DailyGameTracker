@@ -6,6 +6,9 @@ export interface User {
   email: string;
   name?: string | null;
   timezone: string;
+  /** Historical import: assume a year-less date label (GeoSports/GeoHistory) is from the last
+   * 12 months rather than asking the user to disambiguate every time. Defaults to true. */
+  assumeRecentImports: boolean;
   followCode: string;
 }
 
