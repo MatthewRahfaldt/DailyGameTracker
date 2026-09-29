@@ -10,7 +10,7 @@ import { todayInTimezone } from "@/lib/timezone";
  *
  * Everything here is called from one place: `saveGameResult` (apps/web/src/lib/game-results.ts),
  * the same paste box used for both a normal daily paste and backfilling an old result — there's no
- * separate import page. The four puzzle-numbered games are always "certain" regardless of when
+ * separate import page. The puzzle-numbered games are always "certain" regardless of when
  * they're pasted, so they never need a confirmation step. GeoSports/GeoHistory are the only games
  * that ever do, and only when the pasted date doesn't match today (see `resolveGeoDateForPaste`).
  */
@@ -24,8 +24,13 @@ export interface DateResolution {
   reason: string;
 }
 
-/** Games that print a sequential puzzle number in their share text — date is derivable. */
-export const PUZZLE_NUMBERED_GAMES = new Set(["wordle", "connections", "catfishing", "landmarkr"]);
+/**
+ * Games that print a sequential puzzle number in their share text — date is derivable.
+ * Wordle and Connections have well-known public epochs (packages/parsers/src/dating.ts's
+ * KNOWN_EPOCHS); Catfishing, Landmarkr and Krillion don't, so they calibrate against whichever
+ * earlier saved result has a puzzleNumber (see findPuzzleAnchor below) instead.
+ */
+export const PUZZLE_NUMBERED_GAMES = new Set(["wordle", "connections", "catfishing", "landmarkr", "krillion"]);
 
 /** Games that print only a year-less date label — date requires a year guess or confirmation. */
 export const GEO_GAMES = new Set(["geosports", "geohistory"]);
@@ -47,8 +52,8 @@ function extractDateLabel(data: unknown): string | undefined {
 }
 
 /**
- * Find a calibration anchor for a game with no public epoch (Catfishing, Landmarkr): any
- * previously-saved result for this game that has a puzzleNumber in its parsedData.
+ * Find a calibration anchor for a game with no public epoch (Catfishing, Landmarkr, Krillion):
+ * any previously-saved result for this game that has a puzzleNumber in its parsedData.
  *
  * Scoped by `gameId` only, not by user — a puzzle number means the same calendar day for every
  * player, so any user's prior saved result is just as valid an anchor as the current user's own,
@@ -76,8 +81,8 @@ async function findPuzzleAnchor(gameId: string): Promise<PuzzleAnchor | undefine
 }
 
 /**
- * Resolve the played-date for one of the four puzzle-numbered games. Shared by the daily paste
- * box (which only ever calls this for those four games) and the historical import flow.
+ * Resolve the played-date for one of the puzzle-numbered games. Shared by the daily paste
+ * box (which only ever calls this for those games) and the historical import flow.
  */
 export async function resolvePuzzleNumberedDate(
   gameKey: string,

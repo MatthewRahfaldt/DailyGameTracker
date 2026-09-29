@@ -4,6 +4,7 @@ import { catfishingModule } from "./catfishing";
 import { connectionsModule } from "./connections";
 import { createGeoScoreModule } from "./geoScore";
 import { genericModule } from "./generic";
+import { krillionModule } from "./krillion";
 import { landmarkrModule } from "./landmarkr";
 import { wordleModule } from "./wordle";
 import type { GameModule, GameStatsView, ResultSummary } from "./types";
@@ -24,6 +25,7 @@ const MODULES: readonly GameModule[] = [
   landmarkrModule,
   createGeoScoreModule("geosports"),
   createGeoScoreModule("geohistory"),
+  krillionModule,
 ];
 
 const BY_PARSER_KEY = new Map(MODULES.map((module) => [module.parserKey, module]));
