@@ -14,6 +14,18 @@ const PERFECT_TEXT = `catfishing.net
 🐈🐈🐈🐈🐈
 🐈🐈🐈🐈🐈`;
 
+// One "close enough" egg — half credit, so the header shows a .5 score.
+const HALF_POINT_TEXT = `catfishing.net
+#801 - 6.5/10
+🐈🐈🥚🐟🐟
+🐈🐈🐈🐟🐈`;
+
+// A perfect-looking header total that only got there via close-enough eggs shouldn't be a win.
+const ALL_CLOSE_ENOUGH_TEXT = `catfishing.net
+#802 - 5/10
+🥚🥚🥚🥚🥚
+🥚🥚🥚🥚🥚`;
+
 test("detects a Catfishing share text", () => {
   assert.equal(catfishingParser.detect(LOW_SCORE_TEXT), true);
   assert.equal(catfishingParser.detect("just some random text"), false);
@@ -36,15 +48,37 @@ test("marks a perfect Catfishing score as won", () => {
   assert.equal(result.data.totalQuestions, 10);
 });
 
+test("parses a half-point score from a 'close enough' egg", () => {
+  const result = catfishingParser.parse(HALF_POINT_TEXT);
+  assert.equal(result.won, false);
+  assert.equal(result.data.puzzleNumber, 801);
+  assert.equal(result.data.correct, 6.5);
+  assert.equal(result.data.totalQuestions, 10);
+});
+
+test("an all-close-enough run isn't a win even if the total looks tidy", () => {
+  const result = catfishingParser.parse(ALL_CLOSE_ENOUGH_TEXT);
+  assert.equal(result.won, false);
+  assert.equal(result.data.correct, 5);
+});
+
 test("throws a descriptive error on unrecognized text", () => {
   assert.throws(() => catfishingParser.parse("not a catfishing result"), UnparsableTextError);
 });
 
-test("throws when the grid's catfish count disagrees with the header", () => {
+test("throws when the grid's catfish/egg count disagrees with the header", () => {
   const MISMATCH_TEXT = `catfishing.net
 #800 - 3/10
 🐟🐟🐟🐟🐟
 🐟🐟🐟🐈🐟`;
+  assert.throws(() => catfishingParser.parse(MISMATCH_TEXT), UnparsableTextError);
+});
+
+test("throws when a half-point header disagrees with the grid's egg count", () => {
+  const MISMATCH_TEXT = `catfishing.net
+#803 - 7/10
+🐈🐈🥚🐟🐟
+🐈🐈🐈🐟🐈`;
   assert.throws(() => catfishingParser.parse(MISMATCH_TEXT), UnparsableTextError);
 });
 

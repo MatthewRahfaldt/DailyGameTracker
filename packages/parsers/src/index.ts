@@ -6,6 +6,7 @@ import { catfishingParser } from "./catfishing";
 import { landmarkrParser } from "./landmarkr";
 import { geoSportsParser } from "./geosports";
 import { geoHistoryParser } from "./geohistory";
+import { krillionParser } from "./krillion";
 
 export * from "./types";
 export { wordleParser };
@@ -14,6 +15,7 @@ export { catfishingParser };
 export { landmarkrParser };
 export { geoSportsParser };
 export { geoHistoryParser };
+export { krillionParser };
 export * from "./dating";
 
 /**
@@ -27,6 +29,7 @@ export const parsers: GameParser<unknown>[] = [
   landmarkrParser,
   geoSportsParser,
   geoHistoryParser,
+  krillionParser,
 ];
 
 /** Find the first registered parser that recognizes this text, if any. */

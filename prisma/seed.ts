@@ -27,6 +27,7 @@ const GAME_URLS: Record<string, string> = {
   landmarkr: "https://www.landmarkr.app",
   geosports: "https://geosports.app",
   geohistory: "https://geohistory.gg",
+  krillion: "https://krillion.io",
 };
 
 async function main() {

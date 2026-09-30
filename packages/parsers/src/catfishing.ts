@@ -3,20 +3,24 @@ import { UnparsableTextError } from "./types";
 
 export interface CatfishingData {
   puzzleNumber: number;
-  /** Number of questions answered correctly. */
+  /** Total points scored. Usually a whole number, but can end in .5 when one or more answers
+   * were marked "close enough" (🥚, half credit) — see catfishing.net's help page. */
   correct: number;
   /** Total number of questions (the denominator, e.g. 10). */
   totalQuestions: number;
-  /** Each row of 🐟 / 🐈 squares; one square per question. */
+  /** Each row of 🐟 / 🥚 / 🐈 squares; one square per question. */
   grid: string[];
 }
 
-// e.g. "catfishing.net\n#797 - 1/10" — "correct / total questions".
-const HEADER_RE = /catfishing\.net\s*\n\s*#(\d+)\s*-\s*(\d+)\/(\d+)/i;
+// e.g. "catfishing.net\n#797 - 1/10" or "catfishing.net\n#801 - 6.5/10" (a half point from one or
+// more "close enough" answers) — "score / total questions".
+const HEADER_RE = /catfishing\.net\s*\n\s*#(\d+)\s*-\s*([\d.]+)\/(\d+)/i;
 
-// Each question is one square: a plain fish (wrong) or the catfish (correct).
-const GRID_EMOJI = /[🐟🐈]/u;
+// Each question is one square: a plain fish (wrong), the catfish (fully correct), or an egg
+// ("close enough" — half credit).
+const GRID_EMOJI = /[🐟🐈🥚]/u;
 const CORRECT = "🐈";
+const CLOSE_ENOUGH = "🥚";
 
 export const catfishingParser: GameParser<CatfishingData> = {
   key: "catfishing",
@@ -48,19 +52,24 @@ export const catfishingParser: GameParser<CatfishingData> = {
       );
     }
 
-    // One square per question; the catfish (🐈) marks a correct answer.
+    // One square per question: the catfish (🐈) is a full point, the egg (🥚, "close enough") is
+    // half a point, and a plain fish (🐟) is zero.
     const squares = grid.flatMap((row) => Array.from(row));
-    const correctFromGrid = squares.filter((square) => square === CORRECT).length;
+    const fullyCorrect = squares.filter((square) => square === CORRECT).length;
+    const closeEnough = squares.filter((square) => square === CLOSE_ENOUGH).length;
+    const correctFromGrid = fullyCorrect + closeEnough * 0.5;
 
     // The header count and the grid should agree; disagreement means garbled text.
     if (correctFromGrid !== correct) {
       throw new UnparsableTextError(
-        `Catfishing header says ${correct}/${totalQuestions} correct but the grid shows ${correctFromGrid} catfish.`,
+        `Catfishing header says ${correct}/${totalQuestions} correct but the grid shows ${correctFromGrid} correct.`,
       );
     }
 
     return {
-      // A perfect run answers every question correctly.
+      // A perfect run answers every question fully correctly — any "close enough" half point
+      // keeps this from counting as a win, even one that happens to round up to a perfect-looking
+      // total.
       won: correct === totalQuestions,
       data: {
         puzzleNumber,
