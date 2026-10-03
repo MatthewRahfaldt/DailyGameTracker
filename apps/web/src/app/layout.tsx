@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { AppFooter } from "@/components/shell/AppFooter";
 import { AppHeader } from "@/components/shell/AppHeader";
 import "./globals.css";
 
@@ -17,6 +18,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-stone-950 text-stone-200 antialiased">
         <AppHeader />
         {children}
+        <AppFooter />
       </body>
     </html>
   );
